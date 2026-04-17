@@ -86,7 +86,7 @@ public class PromoteMenu : MonoBehaviour
             Debug.Log("user chose knight!");
             knightImg.style.unityBackgroundImageTintColor = Color.yellow;
             ClosePromoteCanvas();
-            gameManager.callPromote(PieceType.Queen);
+            gameManager.callPromote(PieceType.Knight);
         });
         promoteContainer.Add(knightImg);
 
@@ -100,7 +100,7 @@ public class PromoteMenu : MonoBehaviour
             Debug.Log("user chose rook!");
             rookImg.style.unityBackgroundImageTintColor = Color.yellow; 
             ClosePromoteCanvas();
-            gameManager.callPromote(PieceType.Queen);
+            gameManager.callPromote(PieceType.Rook);
         });
         promoteContainer.Add(rookImg);
 
@@ -115,7 +115,7 @@ public class PromoteMenu : MonoBehaviour
             Debug.Log("user chose bishop!");
             bishopImg.style.unityBackgroundImageTintColor = Color.yellow; 
             ClosePromoteCanvas();
-            gameManager.callPromote(PieceType.Queen);
+            gameManager.callPromote(PieceType.Bishop);
         });
         promoteContainer.Add(bishopImg);
         if (isWhite)

@@ -52,19 +52,25 @@ public class GameManage : MonoBehaviour
     List<bool> turnHistory = new List<bool>();
     List<Piece> piecesCurrentlyChecking = new List<Piece>();
 
+    List<PieceView> pieceOnBoard = new List<PieceView>();
+
     public PromoteMenu promoteMenu;
 
     public Piece pawnPromte;
     public Move promoteMove;
 
+    List<GameObject> activeGameObjects = new List<GameObject>();
 
-    private void Awake()
+    void reStartBoard()
     {
-        instance = this;
-
         board = new Board();
         pieceViews = new PieceView[board.boardSize, board.boardSize];
-        //Debug.Log(pieceViews != null ? "pieceViews initialized successfully" : "Failed to initialize pieceViews");
+        Debug.Log(pieceViews != null ? "pieceViews initialized successfully" : "Failed to initialize pieceViews");
+        moveHistory.Clear();
+        activeGameObjects.ForEach(dot => Destroy(dot));
+        activeGameObjects.Clear();
+        gameTurnWhite=true;
+
 
         board.board = new Piece[board.boardSize, board.boardSize];
         board.whitePieces = new System.Collections.Generic.List<Piece> {
@@ -103,6 +109,12 @@ public class GameManage : MonoBehaviour
         }
         displayBoard(board);
     }
+    private void Awake()
+    {
+        instance = this;
+        reStartBoard();
+
+    }
     private void clearDots()
     {
         activeDots.ForEach(dot => Destroy(dot));
@@ -129,9 +141,9 @@ public class GameManage : MonoBehaviour
         }
         isPieceSelected = true;
         selectedPiece = piece;
-        if (!checkKingSafety(piece.pieceData, board))
+        if (!checkKingSafety(gameTurnWhite, board))
         {
-
+            bool canMove = false;
             Vector2Int pos = piece.position;
             List<Move> validMoves = piece.pieceData.getAllValidMoves(board, pos.x, pos.y);
             //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
@@ -140,15 +152,8 @@ public class GameManage : MonoBehaviour
                 //Debug.Log("Valid move: (" + move.toX + "," + move.toY + ")");
                 if (simulateMoveAndCheckSafety(piece.pieceData, move))
                 {
-                    // Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
-                    // GameObject dotObject = Instantiate(dot, spawnPos, Quaternion.identity);
-                    // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-                    // dotScript.position = new Vector2Int(move.toX, move.toY);
-                    // dotScript.isAttackMove = false;
-                    // activeDots.Add(dotObject);
-                    // dotScript.move = move;
-
                     AddDot(move, false, false, false);
+                    canMove = true;
                 }
 
             }
@@ -159,18 +164,23 @@ public class GameManage : MonoBehaviour
             {
                 if (simulateMoveAndCheckSafety(piece.pieceData, move))
                 {
-                    // Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
-                    // GameObject dotObject = Instantiate(attack_high_light, spawnPos, Quaternion.identity);
-                    // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-                    // dotScript.position = new Vector2Int(move.toX, move.toY);
-                    // dotScript.isAttackMove = true;
-                    // activeDots.Add(dotObject);
-                    // dotScript.move = move;
                     AddDot(move, false, false, true);
+                    canMove = true;
                 }
 
             }
 
+            List<Move> enpassantMoves = getEnpassantMoves(piece);
+            //Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");        
+            foreach (Move move in enpassantMoves)
+            {
+                if (simulateMoveAndCheckSafety(piece.pieceData, move))
+                {
+                    AddDot(move, false, true, false);
+                    canMove = true;
+                }
+
+            }
 
             return;
         }
@@ -181,25 +191,120 @@ public class GameManage : MonoBehaviour
         ListingMove(piece);
 
     }
+
+
+    private List<Move> getAllPossibleMoves(PieceView piece)
+    {
+        List<Move> allMoves = new List<Move>();
+        Vector2Int pos = piece.position;
+        List<Move> validMoves = piece.pieceData.getAllValidMoves(board, pos.x, pos.y);
+        //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
+        foreach (Move move in validMoves)
+        {
+            //Debug.Log("Valid move: (" + move.toX + "," + move.toY + ")");
+            if (simulateMoveAndCheckSafety(piece.pieceData, move))
+            {
+                // AddDot(move, false, false, false);
+                allMoves.Add(move);
+            }
+
+        }
+
+        List<Move> attackMoves = piece.pieceData.getAttackMove(board, pos.x, pos.y);
+        //Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");        
+        foreach (Move move in attackMoves)
+        {
+            if (simulateMoveAndCheckSafety(piece.pieceData, move))
+            {
+                //AddDot(move, false, false, true);
+                allMoves.Add(move);
+
+            
+            }
+
+        }
+
+        List<Move> enpassantMoves = getEnpassantMoves(piece);
+        //Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");        
+        foreach (Move move in enpassantMoves)
+        {
+            if (simulateMoveAndCheckSafety(piece.pieceData, move))
+            {
+                //AddDot(move, false, true, false);
+                allMoves.Add(move);
+            
+            }
+
+        }
+        return allMoves;
+
+    }
+    private void checkEndGame()
+    {
+        int possibleMoveCount = 0;  
+        foreach (PieceView piece in pieceOnBoard)
+        {
+            if(piece != null && piece.pieceData.isWhite == gameTurnWhite)
+            {
+                List<Move> moves = getAllPossibleMoves(piece);
+                if (moves.Count > 0)
+                {
+                    possibleMoveCount+= moves.Count;
+                }
+            }
+        }
+        if (possibleMoveCount == 0)
+        {
+            
+            if (!checkKingSafety(gameTurnWhite, board))
+            {
+                Debug.Log("Checkmate! " + (gameTurnWhite ? "Black" : "White") + " wins!");
+                reStartBoard();
+            }
+            else
+            {
+                Debug.Log("Stalemate! It's a draw!");
+            }
+        }
+        else
+        {
+            Debug.Log("Player " + (gameTurnWhite ? "White" : "Black") + " has " + possibleMoveCount + " possible moves.");
+        }
+    }
     private void addEnpassantMove(PieceView piece)
     {
+        List<Move> enpassantMoves = getEnpassantMoves(piece);
+
+
+
+        foreach (Move move in enpassantMoves)
+        {
+            if (simulateMoveAndCheckSafety(piece.pieceData, move))
+            {
+                AddDot(move, false, true, false);
+            }
+        }
+
+
+    }
+    private List<Move> getEnpassantMoves(PieceView piece)
+    {
+
+
+        List<Move> enpassantMoves = new List<Move>();
         if (piece.pieceData is Pawn)
         {
             Move lastMove;
 
             if (moveHistory.Count == 0)
-                return;
+                return new List<Move>();
 
             lastMove = moveHistory[^1];
 
             if (!(lastMove.isPawnLongMove &&
                   lastMove.pieceView.pieceData is Pawn pawn &&
                   pawn.isWhite != piece.pieceData.isWhite))
-                return;
-
-
-
-
+                return new List<Move>();
 
             int x = piece.position.x;
             int y = piece.position.y;
@@ -215,17 +320,20 @@ public class GameManage : MonoBehaviour
                     if (x + 1 == passantX)
                     {
                         // Handle en passant move
-                        AddDot(new Move(x, y, x + 1, y + 1), false, true, false);
+                        //AddDot(new Move(x, y, x + 1, y + 1), false, true, false);
+                        enpassantMoves.Add(new Move(x, y, x + 1, y + 1));
+
                     }
                     else if (x - 1 == passantX)
                     {
                         // Handle en passant move
-                        AddDot(new Move(x, y, x - 1, y + 1), false, true, false);
+                        //AddDot(new Move(x, y, x - 1, y + 1), false, true, false);
+                        enpassantMoves.Add(new Move(x, y, x - 1, y + 1));
                     }
                 }
                 else
                 {
-                    return;
+                    return new List<Move>();
                 }
 
 
@@ -237,138 +345,25 @@ public class GameManage : MonoBehaviour
                     if (x + 1 == passantX)
                     {
                         // Handle en passant move
-                        AddDot(new Move(x, y, x + 1, y - 1), false, true, false);
+                        //AddDot(new Move(x, y, x + 1, y - 1), false, true, false);
+                        enpassantMoves.Add(new Move(x, y, x + 1, y - 1));
                     }
                     else if (x - 1 == passantX)
                     {
                         // Handle en passant move
-                        AddDot(new Move(x, y, x - 1, y - 1), false, true, false);
+                        enpassantMoves.Add(new Move(x, y, x - 1, y - 1));
+                        //AddDot(new Move(x, y, x - 1, y - 1), false, true, false);
                     }
                 }
                 else
                 {
-                    return;
+                    return new List<Move>();
                 }
             }
-
-
-            // if (isHistoryEnpassantable && piece.pieceData is Pawn)
-            // {
-
-
-
-
-            //     if (piece.pieceData.isWhite)
-            //     {
-            //         bool isInBoard = x + 1 < board.boardSize && y + 1 < board.boardSize;
-
-            //         bool isNextToEnemyPawn = false;
-            //         if (isInBoard)
-            //         {
-            //             isNextToEnemyPawn = board.board[x + 1, y] != null && (!board.board[x + 1, y].isWhite);
-            //         }
-
-            //         if (isInBoard && board.board[x + 1, y] is Pawn)
-            //         {
-            //             if (board.board[x + 1, y] is Pawn && !board.board[x + 1, y].isWhite)
-            //             {
-
-            //                 // Vector2 spawnPos = new Vector2(changeXVector(x + 1), changeYVector(y + 1));
-            //                 // GameObject dotObject = Instantiate(attack_high_light, spawnPos, Quaternion.identity);
-            //                 // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-            //                 // dotScript.position = new Vector2Int(x + 1, y + 1);
-            //                 // dotScript.isAttackMove = true;
-            //                 // dotScript.move = new Move(x, y, x + 1, y + 1);
-            //                 // dotScript.isEnPassant = true;
-            //                 // activeDots.Add(dotObject);
-            //                 AddDot(new Move(x, y, x + 1, y + 1), false, true, false);
-            //             }
-            //             //Pawn thisPawn = board.board[x + 1, y] as Pawn;
-
-            //         }
-            //         isInBoard = x - 1 >= 0 && y + 1 < board.boardSize;
-            //         isBlackPiece = false;
-            //         if (isInBoard)
-            //         {
-            //             isBlackPiece = board.board[x - 1, y + 1] != null && !board.board[x - 1, y + 1].isWhite;
-
-            //         }
-            //         if (isInBoard && board.board[x - 1, y] is Pawn)
-            //         {
-            //             if (board.board[x - 1, y] is Pawn && !board.board[x - 1, y].isWhite)
-            //             {
-
-            //                 // Vector2 spawnPos = new Vector2(changeXVector(x - 1), changeYVector(y + 1));
-            //                 // GameObject dotObject = Instantiate(attack_high_light, spawnPos, Quaternion.identity);
-            //                 // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-            //                 // dotScript.position = new Vector2Int(x - 1, y + 1);
-            //                 // dotScript.isAttackMove = true;
-            //                 // dotScript.isEnPassant = true;
-            //                 // dotScript.move = new Move(x, y, x - 1, y + 1);
-            //                 // activeDots.Add(dotObject);
-
-            //                 AddDot(new Move(x, y, x - 1, y + 1), false, true, false);
-            //             }
-            //         }
-            //     }
-            //     else
-            //     {
-
-            //         bool isInBoard = x + 1 < board.boardSize && y - 1 >= 0;
-
-            //         bool isWhitePiece = false;
-            //         if (isInBoard)
-            //         {
-            //             isWhitePiece = board.board[x + 1, y] != null && board.board[x + 1, y - 1].isWhite;
-            //         }
-
-            //         if (isInBoard && board.board[x + 1, y] is Pawn)
-            //         {
-            //             if (board.board[x + 1, y] is Pawn && board.board[x + 1, y].isWhite)
-            //             {
-
-            //                 // Vector2 spawnPos = new Vector2(changeXVector(x + 1), changeYVector(y + 1));
-            //                 // GameObject dotObject = Instantiate(attack_high_light, spawnPos, Quaternion.identity);
-            //                 // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-            //                 // dotScript.position = new Vector2Int(x + 1, y + 1);
-            //                 // dotScript.isAttackMove = true;
-            //                 // dotScript.move = new Move(x, y, x + 1, y + 1);
-            //                 // dotScript.isEnPassant = true;
-            //                 // activeDots.Add(dotObject);
-            //                 AddDot(new Move(x, y, x + 1, y - 1), false, true, false);
-            //             }
-            //             //Pawn thisPawn = board.board[x + 1, y] as Pawn;
-
-            //         }
-            //         isInBoard = x - 1 >= 0 && y - 1 >= 0;
-            //         isWhitePiece = false;
-            //         if (isInBoard)
-            //         {
-            //             isWhitePiece = board.board[x - 1, y - 1] != null && board.board[x - 1, y - 1].isWhite;
-
-            //         }
-            //         if (isInBoard && board.board[x - 1, y] is Pawn)
-            //         {
-            //             if (board.board[x - 1, y] is Pawn && !board.board[x - 1, y].isWhite)
-            //             {
-            //                 // Vector2 spawnPos = new Vector2(changeXVector(x - 1), changeYVector(y + 1));
-            //                 // GameObject dotObject = Instantiate(attack_high_light, spawnPos, Quaternion.identity);
-            //                 // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-            //                 // dotScript.position = new Vector2Int(x - 1, y + 1);
-            //                 // dotScript.isAttackMove = true;
-            //                 // dotScript.isEnPassant = true;
-            //                 // dotScript.move = new Move(x, y, x - 1, y + 1);
-            //                 // activeDots.Add(dotObject);
-
-            //                 AddDot(new Move(x, y, x - 1, y - 1), false, true, false);
-            //             }
-            //         }
-            //     }
-            // }
         }
-
-
+        return new List<Move>();
     }
+
     private void addCastleMove(PieceView piece)
     {
         if (piece.pieceData is King && !piece.pieceData.hasMoved)
@@ -391,16 +386,6 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-                        // Vector2 spawnPos = new Vector2(changeXVector(2), changeYVector(0));
-                        // GameObject dotObject = Instantiate(dot, spawnPos, Quaternion.identity);
-                        // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-                        // dotScript.position = new Vector2Int(2, 0);
-                        // dotScript.isAttackMove = false;
-                        // dotScript.move = new Move(0, 0, 0, 0);
-                        // dotScript.isCastleMove = true;
-                        // activeDots.Add(dotObject);
-                        // Move castleMove = new Move(piece.position.x, piece.position.y, 2, 0);  
-                        // castleMove.isCastle = true;
                         AddDot(new Move(piece.position.x, piece.position.y, 2, 0) { isCastle = true }, false, false, true);
 
                     }
@@ -418,16 +403,6 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-                        // Vector2 spawnPos = new Vector2(changeXVector(6), changeYVector(0));
-                        // GameObject dotObject = Instantiate(dot, spawnPos, Quaternion.identity);
-                        // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-                        // dotScript.position = new Vector2Int(6, 0);
-                        // dotScript.isAttackMove = false;
-                        // dotScript.isCastleMove = true;
-
-                        // dotScript.move = new Move(0, 0, 0, 0);
-
-                        // activeDots.Add(dotObject);
 
                         AddDot(new Move(piece.position.x, piece.position.y, 6, 0) { isCastle = true }, true, false, false);
                     }
@@ -450,14 +425,6 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-                        // Vector2 spawnPos = new Vector2(changeXVector(2), changeYVector(7));
-                        // GameObject dotObject = Instantiate(dot, spawnPos, Quaternion.identity);
-                        // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-                        // dotScript.position = new Vector2Int(2, 7);
-                        // dotScript.isAttackMove = false;
-                        // dotScript.isCastleMove = true;
-
-                        // activeDots.Add(dotObject);
                         AddDot(new Move(piece.position.x, piece.position.y, 2, 7) { isCastle = true }, true, false, false);
                     }
                 }
@@ -474,15 +441,6 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-                        // Vector2 spawnPos = new Vector2(changeXVector(6), changeYVector(7));
-                        // GameObject dotObject = Instantiate(dot, spawnPos, Quaternion.identity);
-                        // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-                        // dotScript.position = new Vector2Int(6, 7);
-                        // dotScript.isAttackMove = false;
-                        // dotScript.isCastleMove = true;
-                        // activeDots.Add(dotObject);
-
-
                         AddDot(new Move(piece.position.x, piece.position.y, 6, 7) { isCastle = true }, true, false, false);
                     }
                 }
@@ -529,15 +487,6 @@ public class GameManage : MonoBehaviour
         //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
         foreach (Move move in validMoves)
         {
-            //Debug.Log("Valid move: (" + move.toX + "," + move.toY + ")");
-            // Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
-            // GameObject dotObject = Instantiate(dot, spawnPos, Quaternion.identity);
-            // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-            // dotScript.position = new Vector2Int(move.toX, move.toY);
-            // dotScript.isAttackMove = false;
-            // dotScript.move = move;
-            // activeDots.Add(dotObject);
-
             AddDot(move, false, false, false);
         }
 
@@ -545,20 +494,12 @@ public class GameManage : MonoBehaviour
         Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");
         foreach (Move move in attackMoves)
         {
-            // Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
-            // GameObject dotObject = Instantiate(attack_high_light, spawnPos, Quaternion.identity);
-            // SuggestDot dotScript = dotObject.GetComponent<SuggestDot>();
-            // dotScript.position = new Vector2Int(move.toX, move.toY);
-            // dotScript.isAttackMove = true;
-            // dotScript.move = move;
-            // activeDots.Add(dotObject);
-
             AddDot(move, false, false, true);
         }
 
     }
 
-    private bool checkKingSafety(Piece piece, Board checkBoard)
+    private bool checkKingSafety(bool isWhite, Board checkBoard)
     {
         //piecesCurrentlyChecking= new List<Piece>();
         // Debug.Log("check safety");
@@ -569,18 +510,13 @@ public class GameManage : MonoBehaviour
             {
                 Piece currentPiece = checkBoard.board[i, j];
                 // Debug.Log("the piece want to move is "+currentPiece.getType());
-                if (currentPiece != null && currentPiece.isWhite != piece.isWhite)
+                if (currentPiece != null && currentPiece.isWhite != isWhite)
                 {
                     List<Move> attackMoves = currentPiece.getAttackMove(checkBoard, i, j);
                     foreach (Move attackMove in attackMoves)
                     {
                         if (checkBoard.board[attackMove.toX, attackMove.toY] is King)
                         {
-                            // Debug.Log("King is in check from piece at (" + i + "," + j + ") attacking (" + attackMove.toX + "," + attackMove.toY + ")");
-                            // Debug.Log("Attacking piece: " + currentPiece.GetType().Name + " color " + (currentPiece.isWhite ? "White" : "Black"));
-                            //piecesCurrentlyChecking.Add(currentPiece);
-                            // checkBoard.PrintBoard();
-
                             return false;
                         }
                     }
@@ -593,25 +529,13 @@ public class GameManage : MonoBehaviour
 
     private bool simulateMoveAndCheckSafety(Piece piece, Move move)
     {
-        // Piece originalToPiece = board.board[move.toX, move.toY];
-        // Piece originalFromPiece = board.board[move.fromX, move.fromY];
-
-        // // Simulate the move
-        // board.board[move.toX, move.toY] = piece;
-        // board.board[move.fromX, move.fromY] = null;
-
-        // bool isSafe = checkKingSafety(piece, move);
-
-        // // Revert the move
-        // board.board[move.toX, move.toY] = originalToPiece;
-        // board.board[move.fromX, move.fromY] = originalFromPiece;
 
         Piece[,] virtualBoard = Board.DeepCopyBoard(board.board);
 
         virtualBoard[move.toX, move.toY] = piece;
         virtualBoard[move.fromX, move.fromY] = null;
         // Debug.Log("now check with simulator");
-        if (checkKingSafety(piece, new Board { board = virtualBoard }))
+        if (checkKingSafety(gameTurnWhite, new Board { board = virtualBoard }))
         {
 
             return true;
@@ -709,10 +633,11 @@ public class GameManage : MonoBehaviour
         {
             MovePiece(selectedPiece, move);
         }
-        
+
         isPieceSelected = false;
         clearDots();
         gameTurnWhite = !gameTurnWhite;
+        checkEndGame();
     }
 
 
@@ -740,10 +665,6 @@ public class GameManage : MonoBehaviour
                 promoteMove = move;
             }
         }
-
-        
-
-
     }
 
     public void callPromote(PieceType promoteTo)
@@ -807,27 +728,18 @@ public class GameManage : MonoBehaviour
 
 
                     GameObject obj = Instantiate(getPrefab(board.board[i, j]), spawnPos, Quaternion.identity);
-
-
+                    activeGameObjects.Add(obj);
 
                     PieceView view = obj.GetComponent<PieceView>();
 
                     pieceViews[i, j] = view;
+                    pieceOnBoard.Add(view);
                     view.id = i * board.boardSize + j;
 
                     if (view != null)
                     {
                         view.Init(board.board[i, j], i, j);
                     }
-
-
-
-
-
-                    // DEBUG EVERYTHING
-                    //Debug.Log("Spawned: " + obj.name);
-
-                    // Check PieceView
 
                 }
             }
