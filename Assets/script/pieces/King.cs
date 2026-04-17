@@ -26,6 +26,8 @@ public class King:Piece
                 }
             }
         }
+
+        
         return validMoves;
     }
 

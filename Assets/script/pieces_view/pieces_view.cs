@@ -9,6 +9,8 @@ public class PieceView : MonoBehaviour
 
     public Vector2Int position;
 
+    
+
     public void Init(Piece piece,int x, int y)
     {
         pieceData = piece;
