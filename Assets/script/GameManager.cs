@@ -146,51 +146,47 @@ public class GameManage : MonoBehaviour
         }
         isPieceSelected = true;
         selectedPiece = piece;
-        if (!checkKingSafety(gameTurnWhite, board))
+
+        Vector2Int pos = piece.position;
+        List<Move> validMoves = piece.pieceData.getAllValidMoves(board, pos.x, pos.y);
+        //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
+        foreach (Move move in validMoves)
         {
-            Vector2Int pos = piece.position;
-            List<Move> validMoves = piece.pieceData.getAllValidMoves(board, pos.x, pos.y);
-            //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
-            foreach (Move move in validMoves)
+            //Debug.Log("Valid move: (" + move.toX + "," + move.toY + ")");
+            if (simulateMoveAndCheckSafety(piece.pieceData, move))
             {
-                //Debug.Log("Valid move: (" + move.toX + "," + move.toY + ")");
-                if (simulateMoveAndCheckSafety(piece.pieceData, move))
-                {
-                    AddDot(move, false, false, false);
-                }
-
+                AddDot(move, false, false, false);
             }
 
-            List<Move> attackMoves = piece.pieceData.getAttackMove(board, pos.x, pos.y);
-            //Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");        
-            foreach (Move move in attackMoves)
-            {
-                if (simulateMoveAndCheckSafety(piece.pieceData, move))
-                {
-                    AddDot(move, false, false, true);
-                }
-
-            }
-
-            List<Move> enpassantMoves = getEnpassantMoves(piece);
-            //Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");        
-            foreach (Move move in enpassantMoves)
-            {
-                if (simulateMoveAndCheckSafety(piece.pieceData, move))
-                {
-                    AddDot(move, false, true, false);
-                }
-
-            }
-
-            return;
         }
+
+        List<Move> attackMoves = piece.pieceData.getAttackMove(board, pos.x, pos.y);
+        //Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");        
+        foreach (Move move in attackMoves)
+        {
+            if (simulateMoveAndCheckSafety(piece.pieceData, move))
+            {
+                AddDot(move, false, false, true);
+            }
+
+        }
+
+        List<Move> enpassantMoves = getEnpassantMoves(piece);
+        //Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");        
+        foreach (Move move in enpassantMoves)
+        {
+            if (simulateMoveAndCheckSafety(piece.pieceData, move))
+            {
+                AddDot(move, false, true, false);
+            }
+
+        }
+
+
 
         addCastleMove(piece);
         addEnpassantMove(piece);
-
-        ListingMove(piece);
-
+        //ListingMove(piece);
     }
 
 
