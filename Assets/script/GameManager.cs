@@ -45,6 +45,8 @@ public class GameManage : MonoBehaviour
     public GameObject dot;
     public GameObject attack_high_light;
 
+    public GameObject piecesParent;
+    
     List<Piece> capturedWhitePieces = new List<Piece>();
     List<Piece> capturedBlackPieces = new List<Piece>();
 
@@ -761,7 +763,7 @@ public class GameManage : MonoBehaviour
 
 
 
-                    GameObject obj = Instantiate(getPrefab(board.board[i, j]), spawnPos, Quaternion.identity);
+                    GameObject obj = Instantiate(getPrefab(board.board[i, j]), spawnPos, Quaternion.identity, piecesParent.transform);
                     activeGameObjects.Add(obj);
 
                     PieceView view = obj.GetComponent<PieceView>();
