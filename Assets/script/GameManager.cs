@@ -181,12 +181,8 @@ public class GameManage : MonoBehaviour
             }
 
         }
-
-
-
         addCastleMove(piece);
         addEnpassantMove(piece);
-        //ListingMove(piece);
     }
 
 
@@ -412,8 +408,10 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-                        AddDot(new Move(piece.position.x, piece.position.y, 2, 0) { isCastle = true }, false, false, true);
-
+                        if (simulateMoveAndCheckSafety(piece.pieceData, new Move(piece.position.x, piece.position.y, 2, 0) { isCastle = true }))
+                        {
+                            AddDot(new Move(piece.position.x, piece.position.y, 2, 0) { isCastle = true }, false, false, true);
+                        }
                     }
                 }
                 if (board.board[7, 0] != null && board.board[7, 0] is Rook && !board.board[7, 0].hasMoved)
@@ -429,8 +427,10 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-
-                        AddDot(new Move(piece.position.x, piece.position.y, 6, 0) { isCastle = true }, true, false, false);
+                        if (simulateMoveAndCheckSafety(piece.pieceData, new Move(piece.position.x, piece.position.y, 6, 0) { isCastle = true }))
+                        {
+                            AddDot(new Move(piece.position.x, piece.position.y, 6, 0) { isCastle = true }, false, false, true);
+                        }
                     }
                 }
             }
@@ -451,7 +451,10 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-                        AddDot(new Move(piece.position.x, piece.position.y, 2, 7) { isCastle = true }, true, false, false);
+                        if (simulateMoveAndCheckSafety(piece.pieceData, new Move(piece.position.x, piece.position.y, 2, 7) { isCastle = true }))
+                        {
+                            AddDot(new Move(piece.position.x, piece.position.y, 2, 7) { isCastle = true }, true, false, false);
+                        }
                     }
                 }
                 if (board.board[7, 7] != null && board.board[7, 7] is Rook && !board.board[7, 7].hasMoved)
@@ -467,7 +470,10 @@ public class GameManage : MonoBehaviour
                     }
                     if (!haveBlock)
                     {
-                        AddDot(new Move(piece.position.x, piece.position.y, 6, 7) { isCastle = true }, true, false, false);
+                        if (simulateMoveAndCheckSafety(piece.pieceData, new Move(piece.position.x, piece.position.y, 6, 7) { isCastle = true }))
+                        {
+                            AddDot(new Move(piece.position.x, piece.position.y, 6, 7) { isCastle = true }, true, false, false);
+                        }
                     }
                 }
             }
