@@ -105,6 +105,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: feb6534916555e14a9a58fc2b630c726, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PieceView
+  id: 0
+  position: {x: 0, y: 0}
 --- !u!61 &-7952902519152371786
 BoxCollider2D:
   m_ObjectHideFlags: 0

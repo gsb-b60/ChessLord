@@ -16,9 +16,7 @@ public class Queen : Piece
         Bishop bishop = new Bishop();
         bishop.isWhite = this.isWhite;
         validMoves.AddRange(rook.getAllValidMoves(board, x, y));
-        
         validMoves.AddRange(bishop.getAllValidMoves(board, x, y));
-        
         return validMoves;
     }
 

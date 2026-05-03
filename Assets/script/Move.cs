@@ -1,9 +1,12 @@
+using Unity.VisualScripting;
+
 public class Move {
     public int fromX, fromY;
     public int toX, toY;
 
 
     public bool isPawnLongMove =false;
+    public bool isAttack = false;
     public bool isWhite;
     public bool isCastle = false;
 

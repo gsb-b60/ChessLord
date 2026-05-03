@@ -83,7 +83,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 3952613839347764632, guid: 57c8fb739277a05429e030b5c4bab4f5, type: 3}
+  m_Sprite: {fileID: 3952613839347764632, guid: 3d4ac8a1f29452745b36f3c074d08771, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -105,6 +105,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: feb6534916555e14a9a58fc2b630c726, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PieceView
+  id: 0
+  position: {x: 0, y: 0}
 --- !u!61 &-6763741495342301328
 BoxCollider2D:
   m_ObjectHideFlags: 0

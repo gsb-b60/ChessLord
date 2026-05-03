@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Principal;
 using NUnit.Framework;
 using Unity.VisualScripting;
@@ -61,6 +62,8 @@ public class GameManage : MonoBehaviour
 
     List<GameObject> activeGameObjects = new List<GameObject>();
 
+    bool isPlayerWhite;
+
     void reStartBoard()
     {
         board = new Board();
@@ -69,7 +72,7 @@ public class GameManage : MonoBehaviour
         moveHistory.Clear();
         activeGameObjects.ForEach(dot => Destroy(dot));
         activeGameObjects.Clear();
-        gameTurnWhite=true;
+        gameTurnWhite = true;
 
 
         board.board = new Piece[board.boardSize, board.boardSize];
@@ -112,6 +115,8 @@ public class GameManage : MonoBehaviour
     private void Awake()
     {
         instance = this;
+        //isPlayerWhite = GameData.selectedSide == 0;
+        isPlayerWhite = false;
         reStartBoard();
 
     }
@@ -143,7 +148,6 @@ public class GameManage : MonoBehaviour
         selectedPiece = piece;
         if (!checkKingSafety(gameTurnWhite, board))
         {
-            bool canMove = false;
             Vector2Int pos = piece.position;
             List<Move> validMoves = piece.pieceData.getAllValidMoves(board, pos.x, pos.y);
             //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
@@ -153,7 +157,6 @@ public class GameManage : MonoBehaviour
                 if (simulateMoveAndCheckSafety(piece.pieceData, move))
                 {
                     AddDot(move, false, false, false);
-                    canMove = true;
                 }
 
             }
@@ -165,7 +168,6 @@ public class GameManage : MonoBehaviour
                 if (simulateMoveAndCheckSafety(piece.pieceData, move))
                 {
                     AddDot(move, false, false, true);
-                    canMove = true;
                 }
 
             }
@@ -177,7 +179,6 @@ public class GameManage : MonoBehaviour
                 if (simulateMoveAndCheckSafety(piece.pieceData, move))
                 {
                     AddDot(move, false, true, false);
-                    canMove = true;
                 }
 
             }
@@ -219,7 +220,7 @@ public class GameManage : MonoBehaviour
                 //AddDot(move, false, false, true);
                 allMoves.Add(move);
 
-            
+
             }
 
         }
@@ -232,7 +233,7 @@ public class GameManage : MonoBehaviour
             {
                 //AddDot(move, false, true, false);
                 allMoves.Add(move);
-            
+
             }
 
         }
@@ -241,21 +242,27 @@ public class GameManage : MonoBehaviour
     }
     private void checkEndGame()
     {
-        int possibleMoveCount = 0;  
+        int possibleMoveCount = 0;
+        int thisSidePieceCount = 0;
+        int opponentPieceCount = 0;
+
         foreach (PieceView piece in pieceOnBoard)
         {
-            if(piece != null && piece.pieceData.isWhite == gameTurnWhite)
+            if (piece != null && piece.pieceData.isWhite == gameTurnWhite)
             {
                 List<Move> moves = getAllPossibleMoves(piece);
                 if (moves.Count > 0)
                 {
-                    possibleMoveCount+= moves.Count;
+                    possibleMoveCount += moves.Count;
                 }
+                thisSidePieceCount++;
             }
+
         }
+
         if (possibleMoveCount == 0)
         {
-            
+
             if (!checkKingSafety(gameTurnWhite, board))
             {
                 Debug.Log("Checkmate! " + (gameTurnWhite ? "Black" : "White") + " wins!");
@@ -268,9 +275,32 @@ public class GameManage : MonoBehaviour
         }
         else
         {
-            Debug.Log("Player " + (gameTurnWhite ? "White" : "Black") + " has " + possibleMoveCount + " possible moves.");
+            if (moveHistory.Count >= 50)
+            {
+                bool isDraw = moveHistory
+                .TakeLast(50)
+                .All(m => !m.isAttack && !(m.pieceView.pieceData is Pawn));
+                if (isDraw)
+                {
+                    Debug.Log("Draw by 50-move rule!");
+                    reStartBoard();
+                }
+            }
+            if (thisSidePieceCount == 1 || opponentPieceCount == 1)
+            {
+                opponentPieceCount = pieceOnBoard.Count - thisSidePieceCount;
+                if (opponentPieceCount <= 3)
+                {
+                    Debug.Log("Draw by insufficient material!");
+                }
+            }
+
+
+
         }
     }
+
+
     private void addEnpassantMove(PieceView piece)
     {
         List<Move> enpassantMoves = getEnpassantMoves(piece);
@@ -537,7 +567,6 @@ public class GameManage : MonoBehaviour
         // Debug.Log("now check with simulator");
         if (checkKingSafety(gameTurnWhite, new Board { board = virtualBoard }))
         {
-
             return true;
         }
         // Debug.Log("Move from (" + move.fromX + "," + move.fromY + ") to (" + move.toX + "," + move.toY + ") would put king in check. Move is not safe.");
@@ -558,12 +587,10 @@ public class GameManage : MonoBehaviour
 
         Move move = new Move(from.x, from.y, to.x, to.y);
 
+
         Move originalMove = dot.move;
+
         originalMove.pieceView = pieceViews[from.x, from.y];
-
-        moveHistory.Add(originalMove);
-
-
 
         if (dot.isAttackMove)
         {
@@ -578,6 +605,7 @@ public class GameManage : MonoBehaviour
                 Destroy(targetPiece.gameObject);
                 board.board[to.x, to.y] = null;
             }
+            originalMove.isAttack = true;
         }
         if (dot.isCastleMove)
         {
@@ -633,6 +661,10 @@ public class GameManage : MonoBehaviour
         {
             MovePiece(selectedPiece, move);
         }
+
+
+        moveHistory.Add(originalMove);
+
 
         isPieceSelected = false;
         clearDots();
@@ -779,11 +811,27 @@ public class GameManage : MonoBehaviour
     }
     private int changeXVector(int x)
     {
-        return x - 4;
+        if (isPlayerWhite)
+        {
+            return x - 4;
+        }
+        else
+        {
+            return 7 - x - 4;
+        }
+
     }
     private int changeYVector(int y)
     {
-        return y - 3;
+        if (isPlayerWhite)
+        {
+            return y - 3;
+        }
+        else
+        {
+            return 7 - y - 3;
+        }
+
     }
 
     // Update is called once per frame
