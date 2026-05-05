@@ -724,14 +724,13 @@ GameObject:
   - component: {fileID: 536929849}
   - component: {fileID: 536929851}
   - component: {fileID: 536929850}
-  - component: {fileID: 536929852}
   m_Layer: 5
   m_Name: moveContainerOdd
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &536929849
 RectTransform:
   m_ObjectHideFlags: 0
@@ -749,9 +748,9 @@ RectTransform:
   - {fileID: 335206365}
   m_Father: {fileID: 902598688}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 289.6347, y: -31.67688}
   m_SizeDelta: {x: 581.8647, y: 63.3538}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &536929850
@@ -792,21 +791,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 536929848}
   m_CullTransparentMesh: 1
---- !u!114 &536929852
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 536929848}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 722beef56585ddc4f9f9518bdaf204ba, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ListMoveScript
-  moveNumber: {fileID: 1112382337}
-  whiteMoveDisplay: {fileID: 1968059605}
-  blackMoveDisplay: {fileID: 335206366}
 --- !u!1 &587774803
 GameObject:
   m_ObjectHideFlags: 0
@@ -819,7 +803,7 @@ GameObject:
   - component: {fileID: 587774806}
   - component: {fileID: 587774805}
   m_Layer: 5
-  m_Name: whiteTurnMove
+  m_Name: OrderText (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1139,14 +1123,13 @@ GameObject:
   - component: {fileID: 771353285}
   - component: {fileID: 771353287}
   - component: {fileID: 771353286}
-  - component: {fileID: 771353288}
   m_Layer: 5
   m_Name: moveContainerEven
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &771353285
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1164,9 +1147,9 @@ RectTransform:
   - {fileID: 437556515}
   m_Father: {fileID: 902598688}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 289.6347, y: -31.67688}
   m_SizeDelta: {x: 581.86475, y: 63.3538}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &771353286
@@ -1207,21 +1190,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 771353284}
   m_CullTransparentMesh: 1
---- !u!114 &771353288
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 771353284}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 722beef56585ddc4f9f9518bdaf204ba, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ListMoveScript
-  moveNumber: {fileID: 1930986882}
-  whiteMoveDisplay: {fileID: 587774805}
-  blackMoveDisplay: {fileID: 437556516}
 --- !u!1 &902598687
 GameObject:
   m_ObjectHideFlags: 0
@@ -2045,7 +2013,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 408, y: 246.01}
-  m_SizeDelta: {x: 134.6, y: 492.01}
+  m_SizeDelta: {x: 134.5975, y: 492.01}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1814137930
 MonoBehaviour:
@@ -2258,7 +2226,7 @@ GameObject:
   - component: {fileID: 1968059606}
   - component: {fileID: 1968059605}
   m_Layer: 5
-  m_Name: whiteTurnMove
+  m_Name: OrderText (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

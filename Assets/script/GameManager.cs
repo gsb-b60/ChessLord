@@ -4,13 +4,15 @@ using System.Security.Principal;
 using NUnit.Framework;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum PieceType
 {
     Queen,
     Rook,
     Bishop,
-    Knight
+    Knight,
+    pawn
 }
 public class GameManage : MonoBehaviour
 {
@@ -46,7 +48,26 @@ public class GameManage : MonoBehaviour
     public GameObject attack_high_light;
 
     public GameObject piecesParent;
-    
+
+
+    public Sprite blackBishop;
+    public Sprite whiteBishop;
+    public Sprite blackKnight;
+    public Sprite whiteKnight;
+    public Sprite blackRook;
+    public Sprite whiteRook;
+    public Sprite blackQueen;
+    public Sprite whiteQueen;
+    public Sprite blackPawn;
+    public Sprite whitePawn;
+
+    public GameObject userCaptureContainer;
+    public GameObject computerCaptureContainer;
+
+    public GameObject listMovePanel;
+    public GameObject moveOddPrefab;
+    public GameObject moveEvenPrefab;
+
     List<Piece> capturedWhitePieces = new List<Piece>();
     List<Piece> capturedBlackPieces = new List<Piece>();
 
@@ -61,6 +82,8 @@ public class GameManage : MonoBehaviour
 
     public Piece pawnPromte;
     public Move promoteMove;
+
+    private GameObject currentListingMove;
 
     List<GameObject> activeGameObjects = new List<GameObject>();
 
@@ -514,24 +537,24 @@ public class GameManage : MonoBehaviour
 
 
 
-    private void ListingMove(PieceView piece)
-    {
-        Vector2Int pos = piece.position;
-        List<Move> validMoves = piece.pieceData.getAllValidMoves(board, pos.x, pos.y);
-        //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
-        foreach (Move move in validMoves)
-        {
-            AddDot(move, false, false, false);
-        }
+    // private void ListingMove(PieceView piece)
+    // {
+    //     Vector2Int pos = piece.position;
+    //     List<Move> validMoves = piece.pieceData.getAllValidMoves(board, pos.x, pos.y);
+    //     //Debug.Log("Found " + validMoves.Count + " valid moves for piece at (" + pos.x + "," + pos.y + ")");     
+    //     foreach (Move move in validMoves)
+    //     {
+    //         AddDot(move, false, false, false);
+    //     }
 
-        List<Move> attackMoves = piece.pieceData.getAttackMove(board, pos.x, pos.y);
-        Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");
-        foreach (Move move in attackMoves)
-        {
-            AddDot(move, false, false, true);
-        }
+    //     List<Move> attackMoves = piece.pieceData.getAttackMove(board, pos.x, pos.y);
+    //     Debug.Log("Found " + attackMoves.Count + " attack moves for piece at (" + pos.x + "," + pos.y + ")");
+    //     foreach (Move move in attackMoves)
+    //     {
+    //         AddDot(move, false, false, true);
+    //     }
 
-    }
+    // }
 
     private bool checkKingSafety(bool isWhite, Board checkBoard)
     {
@@ -578,7 +601,91 @@ public class GameManage : MonoBehaviour
 
         return false;
     }
+    private void appendCapturedPiece(Piece piece)
+    {
+        if (piece.isWhite)
+        {
+            capturedWhitePieces.Add(piece);
+        }
+        else
+        {
+            capturedBlackPieces.Add(piece);
+        }
+        Transform targetContainer = GetTargetContainer(piece);
 
+        // 3. Tạo UI
+        CreateCapturedUI(piece, targetContainer);
+
+    }
+    private Transform GetTargetContainer(Piece piece)
+    {
+        bool isPlayerPiece = (piece.isWhite == isPlayerWhite);
+        return isPlayerPiece
+            ? computerCaptureContainer.transform
+            : userCaptureContainer.transform;
+    }
+    private void CreateCapturedUI(Piece piece, Transform container)
+    {
+        GameObject obj = new GameObject("CapturedPiece");
+        obj.transform.SetParent(container, false);
+
+        Image img = obj.AddComponent<Image>();
+        img.sprite = getSprite(piece);
+        img.preserveAspect = true;
+
+        RectTransform rt = obj.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(50, 50);
+    }
+    private Sprite getSprite(Piece piece)
+    {
+        if (piece is Pawn)
+        {
+            return piece.isWhite ? whitePawn : blackPawn;
+        }
+        else if (piece is Rook)
+        {
+            return piece.isWhite ? whiteRook : blackRook;
+        }
+        else if (piece is Knight)
+        {
+            return piece.isWhite ? whiteKnight : blackKnight;
+        }
+        else if (piece is Bishop)
+        {
+            return piece.isWhite ? whiteBishop : blackBishop;
+        }
+        else if (piece is Queen)
+        {
+            return piece.isWhite ? whiteQueen : blackQueen;
+        }
+        return null;
+    }
+    public void displayListMove()
+    {
+        if (gameTurnWhite)
+        {
+
+            currentListingMove = null;
+            int orderOfMove = moveHistory.Count/2+1;
+            string textMove = moveHistory.Last().ToString();
+            if ((moveHistory.Count / 2) %2==0)
+            {
+                currentListingMove = Instantiate(moveEvenPrefab, listMovePanel.transform);
+            }
+            else
+            {
+                currentListingMove = Instantiate(moveOddPrefab, listMovePanel.transform);
+
+            }
+            currentListingMove.SetActive(true);
+            currentListingMove.GetComponent<ListMoveScript>().displayListMove(orderOfMove, textMove);
+        }
+        else
+        {
+            currentListingMove.GetComponent<ListMoveScript>().displayBlackMove(moveHistory.Last().ToString());
+        }
+
+    }
 
 
 
@@ -596,6 +703,8 @@ public class GameManage : MonoBehaviour
 
         originalMove.pieceView = pieceViews[from.x, from.y];
 
+        // displayListMove();
+
         if (dot.isAttackMove)
         {
 
@@ -606,8 +715,11 @@ public class GameManage : MonoBehaviour
             if (targetPiece != null)
             {
                 //Debug.Log("Attacking piece at (" + to.x + "," + to.y + "): " + targetPiece.pieceData.GetType().Name);
+                appendCapturedPiece(targetPiece.pieceData);
                 Destroy(targetPiece.gameObject);
                 board.board[to.x, to.y] = null;
+                pieceOnBoard.Remove(targetPiece);
+
             }
             originalMove.isAttack = true;
         }
@@ -668,7 +780,7 @@ public class GameManage : MonoBehaviour
 
 
         moveHistory.Add(originalMove);
-
+        displayListMove();
 
         isPieceSelected = false;
         clearDots();
