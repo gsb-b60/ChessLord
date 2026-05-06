@@ -8,11 +8,19 @@ using UnityEngine.UI;
 
 public enum PieceType
 {
+    None,
     Queen,
     Rook,
     Bishop,
     Knight,
-    pawn
+    Pawn
+}
+public enum CheckType
+{
+    None,
+    Check,
+    Checkmate,
+    Stalemate
 }
 public class GameManage : MonoBehaviour
 {
@@ -283,11 +291,14 @@ public class GameManage : MonoBehaviour
             if (!checkKingSafety(gameTurnWhite, board))
             {
                 Debug.Log("Checkmate! " + (gameTurnWhite ? "Black" : "White") + " wins!");
-                reStartBoard();
+
+                moveHistory.Last().checkType = CheckType.Checkmate;
+                //reStartBoard();
             }
             else
             {
                 Debug.Log("Stalemate! It's a draw!");
+                moveHistory.Last().checkType = CheckType.Stalemate;
             }
         }
         else
@@ -300,7 +311,9 @@ public class GameManage : MonoBehaviour
                 if (isDraw)
                 {
                     Debug.Log("Draw by 50-move rule!");
-                    reStartBoard();
+
+                    moveHistory.Last().checkType = CheckType.Stalemate;
+                    //reStartBoard();
                 }
             }
             if (thisSidePieceCount == 1 || opponentPieceCount == 1)
@@ -309,6 +322,9 @@ public class GameManage : MonoBehaviour
                 if (opponentPieceCount <= 3)
                 {
                     Debug.Log("Draw by insufficient material!");
+
+                    moveHistory.Last().checkType = CheckType.Stalemate;
+                    //reStartBoard();
                 }
             }
 
@@ -435,7 +451,7 @@ public class GameManage : MonoBehaviour
                     {
                         if (simulateMoveAndCheckSafety(piece.pieceData, new Move(piece.position.x, piece.position.y, 2, 0) { isCastle = true }))
                         {
-                            AddDot(new Move(piece.position.x, piece.position.y, 2, 0) { isCastle = true }, false, false, true);
+                            AddDot(new Move(piece.position.x, piece.position.y, 2, 0) { isCastle = true }, true, false, false);
                         }
                     }
                 }
@@ -454,7 +470,7 @@ public class GameManage : MonoBehaviour
                     {
                         if (simulateMoveAndCheckSafety(piece.pieceData, new Move(piece.position.x, piece.position.y, 6, 0) { isCastle = true }))
                         {
-                            AddDot(new Move(piece.position.x, piece.position.y, 6, 0) { isCastle = true }, false, false, true);
+                            AddDot(new Move(piece.position.x, piece.position.y, 6, 0) { isCastle = true }, true, false, false);
                         }
                     }
                 }
@@ -662,13 +678,13 @@ public class GameManage : MonoBehaviour
     }
     public void displayListMove()
     {
-        if (gameTurnWhite)
+        if (!gameTurnWhite)
         {
 
             currentListingMove = null;
-            int orderOfMove = moveHistory.Count/2+1;
+            int orderOfMove = moveHistory.Count / 2 + 1;
             string textMove = moveHistory.Last().ToString();
-            if ((moveHistory.Count / 2) %2==0)
+            if ((moveHistory.Count / 2) % 2 == 0)
             {
                 currentListingMove = Instantiate(moveEvenPrefab, listMovePanel.transform);
             }
@@ -730,12 +746,15 @@ public class GameManage : MonoBehaviour
                 MovePiece(selectedPiece, move);
                 if (move.toX == 2)
                 {
+                    Debug.Log("Castle move: Moving rook from (0," + move.toY + ") to (3," + move.toY + ")");
                     MovePiece(pieceViews[0, move.toY], new Move(0, 0, move.toX + 1, move.toY));
                 }
                 if (move.toX == 6)
                 {
+                    Debug.Log("Castle move: Moving rook from (7," + move.toY + ") to (5," + move.toY + ")");
                     MovePiece(pieceViews[7, move.toY], new Move(0, 0, move.toX - 1, move.toY));
                 }
+                
             }
             else
             {
@@ -780,12 +799,16 @@ public class GameManage : MonoBehaviour
 
 
         moveHistory.Add(originalMove);
-        displayListMove();
+
 
         isPieceSelected = false;
         clearDots();
+
         gameTurnWhite = !gameTurnWhite;
+
+        moveHistory.Last().checkType = !checkKingSafety(gameTurnWhite, board) ? CheckType.Check : CheckType.None;
         checkEndGame();
+        displayListMove();
     }
 
 
@@ -853,6 +876,7 @@ public class GameManage : MonoBehaviour
         PieceView view = obj.GetComponent<PieceView>();
         pieceViews[x, y] = view;
         view.Init(newPiece, x, y);
+        moveHistory.Last().promoteTo = promoteTo;
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created

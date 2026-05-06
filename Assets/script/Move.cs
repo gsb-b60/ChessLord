@@ -8,6 +8,9 @@ public class Move
     public bool isAttack = false;
     public bool isWhite;
     public bool isCastle = false;
+    public PieceType promoteTo = PieceType.None;
+
+    public CheckType checkType = CheckType.None;
 
     public PieceView pieceView;
     public Move(int fx, int fy, int tx, int ty)
@@ -45,7 +48,27 @@ public class Move
         }
         return isAttack ? "x" : "";
     }
-
+    public string isCheckChar()
+    {
+        return checkType switch
+        {
+            CheckType.Check => "+",
+            CheckType.Checkmate => "#",
+            CheckType.Stalemate => "½-½",
+            _ => ""
+        };
+    }
+    public string ConvertPromotion()
+    {
+        return promoteTo switch
+        {
+            PieceType.Queen => "=Q",
+            PieceType.Rook => "=R",
+            PieceType.Bishop => "=B",
+            PieceType.Knight => "=N",
+            _ => ""
+        };
+    }
     public override string ToString()
     {
         if (isCastle)
@@ -55,6 +78,6 @@ public class Move
             else 
                 return "O-O-O";
         }
-        return $"{GetCharChessPiece(pieceView)}{getAttackChar()}{Convert(toX, toY)}";
+        return $"{GetCharChessPiece(pieceView)}{getAttackChar()}{Convert(toX, toY)}{ConvertPromotion()}{isCheckChar()}";
     }
 }
