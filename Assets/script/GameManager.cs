@@ -76,6 +76,8 @@ public class GameManage : MonoBehaviour
     public GameObject moveOddPrefab;
     public GameObject moveEvenPrefab;
 
+    public GameObject lastMovePrefab;
+
     List<Piece> capturedWhitePieces = new List<Piece>();
     List<Piece> capturedBlackPieces = new List<Piece>();
 
@@ -94,6 +96,7 @@ public class GameManage : MonoBehaviour
     private GameObject currentListingMove;
 
     List<GameObject> activeGameObjects = new List<GameObject>();
+    List<GameObject> activeMoveHighlight = new List<GameObject>();
 
     bool isPlayerWhite;
 
@@ -754,7 +757,7 @@ public class GameManage : MonoBehaviour
                     Debug.Log("Castle move: Moving rook from (7," + move.toY + ") to (5," + move.toY + ")");
                     MovePiece(pieceViews[7, move.toY], new Move(0, 0, move.toX - 1, move.toY));
                 }
-                
+
             }
             else
             {
@@ -808,9 +811,24 @@ public class GameManage : MonoBehaviour
 
         moveHistory.Last().checkType = !checkKingSafety(gameTurnWhite, board) ? CheckType.Check : CheckType.None;
         checkEndGame();
+        displayMovedPiece(moveHistory.Last());
         displayListMove();
     }
 
+    private void displayMovedPiece(Move move)
+    {
+        activeMoveHighlight.ForEach(dot => Destroy(dot));
+        activeMoveHighlight.Clear();
+        
+        Vector2 spawnPos = new Vector2(changeXVector(move.fromX), changeYVector(move.fromY));
+
+        GameObject fromMove = Instantiate(lastMovePrefab, spawnPos, Quaternion.identity);
+        activeMoveHighlight.Add(fromMove);
+
+        spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
+        GameObject toMove = Instantiate(lastMovePrefab, spawnPos, Quaternion.identity);
+        activeMoveHighlight.Add(toMove);
+    }
 
     private void MovePiece(PieceView piece, Move move)
     {
