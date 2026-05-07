@@ -3,7 +3,7 @@ using System.Collections.Generic;
 public class Piece 
 {
     public bool isWhite;
-    public bool hasMoved;
+    public bool hasMoved=false;
     public virtual List<Move> getAllValidMoves(Board board, int x, int y)
     {
         return new List<Move>();

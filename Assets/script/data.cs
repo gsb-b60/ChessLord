@@ -48,4 +48,22 @@ public static class GameData
             return _rand.Next(2) == 0;
         }
     }
+
+
+
+    public static string getFenChar(Piece piece)
+    {
+        if (piece == null) return "1";
+        string fenChar = piece switch 
+        {
+            Pawn => fenChar = "p",
+            Knight => fenChar = "n",
+            Rook => fenChar = "r",
+            Bishop => fenChar = "b",
+            Queen => fenChar = "q",
+            King => fenChar = "k",
+            _ => fenChar = "1"
+        };
+        return piece.isWhite ? fenChar.ToUpper() : fenChar.ToLower();
+    }
 }

@@ -24,7 +24,7 @@ public class Move
     public static string Convert(int x, int y)
     {
         char column = (char)('a' + x);
-        int row = 8 - y;
+        int row = y+1;
         return $"{column}{row}";
     }
     public static string GetCharChessPiece(PieceView piece)
@@ -79,5 +79,9 @@ public class Move
                 return "O-O-O";
         }
         return $"{GetCharChessPiece(pieceView)}{getAttackChar()}{Convert(toX, toY)}{ConvertPromotion()}{isCheckChar()}";
+    }
+    public string enPassantFen()
+    {
+        return $"{Convert(toX, toY)}";
     }
 }

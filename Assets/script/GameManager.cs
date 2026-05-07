@@ -95,7 +95,7 @@ public class GameManage : MonoBehaviour
     public Move promoteMove;
     public ScrollRect moveListScroll;
     private GameObject currentListingMove;
-    
+
 
     List<GameObject> activeGameObjects = new List<GameObject>();
     List<GameObject> activeMoveHighlight = new List<GameObject>();
@@ -119,8 +119,8 @@ public class GameManage : MonoBehaviour
     }
     public void reStartBoard()
     {
-        
-        isPlayerWhite= GameData.getPlayerSide();
+
+        isPlayerWhite = GameData.getPlayerSide();
         Debug.Log("Player is white: " + isPlayerWhite);
 
 
@@ -238,12 +238,12 @@ public class GameManage : MonoBehaviour
         {
             if (simulateMoveAndCheckSafety(piece.pieceData, move))
             {
-                AddDot(move, false, true, false);
+                AddDot(move, false, true,true);
             }
 
         }
         addCastleMove(piece);
-        addEnpassantMove(piece);
+        //addEnpassantMove(piece);
     }
 
 
@@ -375,7 +375,7 @@ public class GameManage : MonoBehaviour
         {
             if (simulateMoveAndCheckSafety(piece.pieceData, move))
             {
-                AddDot(move, false, true, false);
+                AddDot(move, false, true, true);
             }
         }
 
@@ -383,15 +383,16 @@ public class GameManage : MonoBehaviour
     }
     private List<Move> getEnpassantMoves(PieceView piece)
     {
-
-
         List<Move> enpassantMoves = new List<Move>();
         if (piece.pieceData is Pawn)
         {
+            Debug.Log("get in 1");
             Move lastMove;
 
             if (moveHistory.Count == 0)
                 return new List<Move>();
+
+            Debug.Log("get in 2");
 
             lastMove = moveHistory[^1];
 
@@ -400,12 +401,13 @@ public class GameManage : MonoBehaviour
                   pawn.isWhite != piece.pieceData.isWhite))
                 return new List<Move>();
 
+            Debug.Log("yes to all");
+
             int x = piece.position.x;
             int y = piece.position.y;
 
             int passantY = lastMove.toY;
             int passantX = lastMove.toX;
-
 
             if (piece.pieceData.isWhite)
             {
@@ -429,8 +431,6 @@ public class GameManage : MonoBehaviour
                 {
                     return new List<Move>();
                 }
-
-
             }
             else
             {
@@ -455,7 +455,7 @@ public class GameManage : MonoBehaviour
                 }
             }
         }
-        return new List<Move>();
+        return enpassantMoves;
     }
 
     private void addCastleMove(PieceView piece)
@@ -845,6 +845,103 @@ public class GameManage : MonoBehaviour
         checkEndGame();
         displayMovedPiece(moveHistory.Last());
         displayListMove();
+        ExportFEN();
+
+    }
+
+
+
+    private void ExportFEN()
+    {
+        string boardPosition = "";
+
+        for (int i = 0; i < board.boardSize; i++)
+        {
+            int emptyCount = 0;
+            for (int j = 0; j < board.boardSize; j++)
+            {
+                Piece piece = board.board[j, board.boardSize - 1 - i];
+                if (piece == null)
+                {
+                    emptyCount++;
+                }
+                else
+                {
+                    if (emptyCount > 0)
+                    {
+                        boardPosition += emptyCount.ToString();
+                        emptyCount = 0;
+                    }
+                    boardPosition += GameData.getFenChar(piece);
+                }
+            }
+            if (emptyCount > 0)
+            {
+                boardPosition += emptyCount.ToString();
+            }
+            if (i < board.boardSize - 1)
+            {
+                boardPosition += "/";
+            }
+        }
+        // Debug.Log("FEN: " + boardPosition);
+        // Debug.Log("Active color: " + (gameTurnWhite ? "w" : "b"));
+
+
+
+
+        string castlelingRights = "";
+        if (board.board[4, 0] != null && board.board[4, 0] is King whiteKing && !whiteKing.hasMoved)
+        {
+            Debug.Log("white king havent moved yet");
+            if (board.board[7, 0] != null && board.board[7, 0] is Rook rook && !rook.hasMoved)
+            {
+                castlelingRights += "K";
+                Debug.Log("white can castle kingside");
+            }
+            if (board.board[0, 0] != null && board.board[0, 0] is Rook rookWhite1 && !rookWhite1.hasMoved)
+            {
+                castlelingRights += "Q";
+                Debug.Log("white can castle queenside");
+            }
+        }
+
+
+        if (board.board[4, 7] != null && board.board[4, 7] is King king && !king.hasMoved)
+        {
+            if (board.board[7, 7] != null && board.board[7, 7] is Rook rook && !rook.hasMoved)
+            {
+                castlelingRights += "k";
+            }
+            if (board.board[0, 7] != null && board.board[0, 7] is Rook rookblack1 && !rookblack1.hasMoved)
+            {
+                castlelingRights += "q";
+            }
+        }
+        if (castlelingRights == "")
+        {
+            castlelingRights = "-";
+        }
+        Debug.Log("Castling rights: " + castlelingRights);
+        string enpassantRight = "-";
+        if (moveHistory.Last().isPawnLongMove)
+        {
+            foreach (PieceView piece in pieceOnBoard)
+            {
+                List<Move> enMove = getEnpassantMoves(piece);
+                if (enMove != null && enMove.Count > 0)
+                {
+                    enpassantRight = enMove.Last().enPassantFen();
+                }
+
+            }
+        }
+
+        Debug.Log("enpassant right " + enpassantRight);
+
+
+        Debug.Log("complete FEN: " + boardPosition + " " + (gameTurnWhite ? "w" : "b") + " " + castlelingRights + " " + enpassantRight + " [half move] [full move]");
+
     }
     private void displayKingInCheck()
     {
@@ -856,7 +953,7 @@ public class GameManage : MonoBehaviour
             SpriteRenderer sr = piece.GetComponent<SpriteRenderer>();
 
             bool isInCheck = !checkKingSafety(piece.pieceData.isWhite, board);
-            if(isInCheck)
+            if (isInCheck)
             {
                 Debug.Log("King at (" + piece.position.x + "," + piece.position.y + ") is in check!");
             }
@@ -884,6 +981,7 @@ public class GameManage : MonoBehaviour
     {
         Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
         piece.transform.position = spawnPos;
+        board.board[move.fromX, move.fromY].hasMoved = true;
         board.board[move.toX, move.toY] = piece.pieceData;
         board.board[piece.position.x, piece.position.y] = null;
 

@@ -39,44 +39,43 @@ public class Board
 
 
     public void PrintBoard()
+{
+    if (board == null)
     {
-        if (board == null)
-        {
-            Debug.LogError("Board is null! Cannot print.");
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        int rows = board.GetLength(0);
-        int cols = board.GetLength(1);
-
-        sb.AppendLine("Board State:");
-        sb.AppendLine("  a b c d e f g h");
-
-        for (int i = 0; i < rows; i++)
-        {
-            // Adding the row number (8 down to 1)
-            sb.Append((rows - i) + " ");
-
-            for (int j = 0; j < cols; j++)
-            {
-                Piece p = board[i, j];
-                if (p == null)
-                {
-                    sb.Append(". ");
-                }
-                else
-                {
-                    sb.Append(GetPieceChar(p) + " ");
-                }
-            }
-            sb.AppendLine(); // Move to next row
-        }
-
-        // Print the final result to Unity Console
-        Debug.Log(sb.ToString());
+        Debug.LogError("Board is null! Cannot print.");
+        return;
     }
 
+    // Initialize as an empty string
+    string boardString = "Board State:\n";
+    boardString += "  a b c d e f g h\n";
+
+    int rows = board.GetLength(0);
+    int cols = board.GetLength(1);
+
+    for (int i = 0; i < rows; i++)
+    {
+        // Adding the row number (8 down to 1)
+        boardString += (rows - i) + " ";
+
+        for (int j = 0; j < cols; j++)
+        {
+            Piece p = board[j,i];
+            if (p == null)
+            {
+                boardString += ". ";
+            }
+            else
+            {
+                boardString += GetPieceChar(p) + " ";
+            }
+        }
+        boardString += "\n"; // Move to next row
+    }
+
+    // Print the final result to Unity Console
+    Debug.Log(boardString);
+}
     private char GetPieceChar(Piece p)
     {
         // Assuming your Piece class has a Type or Name property
