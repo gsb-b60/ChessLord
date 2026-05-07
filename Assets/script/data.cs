@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using math = System.Math;
 public static class GameData
 {
     public static int selectedLevel;
-    public static int selectedSide;
+    public static int selectedSide=1;
 
     public static List<int> sideListTurn = new List<int>();
     private static readonly Random _rand = new Random();
@@ -29,6 +28,10 @@ public static class GameData
             }
         }
         sideListTurn.Add(side);
+    }
+    public static void changeSide()
+    {
+        selectedSide *= -1;
     }
     public static bool getPlayerSide()
     {

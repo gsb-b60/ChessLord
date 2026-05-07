@@ -107,8 +107,23 @@ public class GameManage : MonoBehaviour
         gameMatchPanel.SetActive(true);
         gameMatchPanel.GetComponent<GameMatchScript>().SetResultText(result, userWon);
     }
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
+    public void PlayAgain()
+    {
+        GameData.changeSide();
+        Debug.Log("Selected side after change: " + GameData.selectedSide);
+        reStartBoard();
+    }
     public void reStartBoard()
     {
+        
+        isPlayerWhite= GameData.getPlayerSide();
+        Debug.Log("Player is white: " + isPlayerWhite);
+
+
         gameMatchPanel.SetActive(false);
         activeGameObjects.ForEach(dot => Destroy(dot));
         activeGameObjects.Clear();
@@ -163,8 +178,6 @@ public class GameManage : MonoBehaviour
     private void Awake()
     {
         instance = this;
-        //isPlayerWhite = GameData.selectedSide == 0;
-        isPlayerWhite = false;
         reStartBoard();
 
     }
