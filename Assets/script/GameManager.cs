@@ -93,8 +93,9 @@ public class GameManage : MonoBehaviour
 
     public Piece pawnPromte;
     public Move promoteMove;
-
+    public ScrollRect moveListScroll;
     private GameObject currentListingMove;
+    
 
     List<GameObject> activeGameObjects = new List<GameObject>();
     List<GameObject> activeMoveHighlight = new List<GameObject>();
@@ -712,6 +713,9 @@ public class GameManage : MonoBehaviour
             }
             currentListingMove.SetActive(true);
             currentListingMove.GetComponent<ListMoveScript>().displayListMove(orderOfMove, textMove);
+
+            Canvas.ForceUpdateCanvases();
+            moveListScroll.verticalNormalizedPosition = 0f;
         }
         else
         {
