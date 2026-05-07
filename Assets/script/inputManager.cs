@@ -33,7 +33,7 @@ public class inputManager : MonoBehaviour
                 if (dot != null)
                 {
                     dot.onClick();
-                    //Debug.Log("Clicked on dot at position: " + dot.position);
+                    Debug.Log("Clicked on dot at position: " + dot.position);
                     return;
                 }
             }
