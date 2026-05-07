@@ -3,10 +3,11 @@ using UnityEngine;
 
 class GameMatchScript : MonoBehaviour
 {
-    TMP_Text resultText;
+    public TMP_Text resultText;
     public void SetResultText(CheckType result, bool userWon)
     {
         string resultString = "";
+        Debug.Log("Setting result text with result: " + result + ", userWon: " + userWon);
         switch (result)
         {
             case CheckType.Checkmate:

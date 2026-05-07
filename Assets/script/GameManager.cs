@@ -102,6 +102,7 @@ public class GameManage : MonoBehaviour
     bool isPlayerWhite;
     public void EndingGame(CheckType result = CheckType.None, bool userWon = false)
     {
+        Debug.Log("Ending game with result: " + result + ", userWon: " + userWon);
         gameMatchPanel.SetActive(true);
         gameMatchPanel.GetComponent<GameMatchScript>().SetResultText(result, userWon);
     }
@@ -306,13 +307,15 @@ public class GameManage : MonoBehaviour
                 Debug.Log("Checkmate! " + (gameTurnWhite ? "Black" : "White") + " wins!");
 
                 moveHistory.Last().checkType = CheckType.Checkmate;
+                Debug.Log("is player white: " + isPlayerWhite);
+                Debug.Log("game turn white: " + gameTurnWhite);
                 EndingGame(CheckType.Checkmate, isPlayerWhite != gameTurnWhite);
             }
             else
             {
                 Debug.Log("Stalemate! It's a draw!");
                 moveHistory.Last().checkType = CheckType.Stalemate;
-                EndingGame(CheckType.Stalemate, false);
+                EndingGame(CheckType.Stalemate);
             }
         }
         else
@@ -819,11 +822,30 @@ public class GameManage : MonoBehaviour
         clearDots();
 
         gameTurnWhite = !gameTurnWhite;
-
         moveHistory.Last().checkType = !checkKingSafety(gameTurnWhite, board) ? CheckType.Check : CheckType.None;
+
+        displayKingInCheck();
         checkEndGame();
         displayMovedPiece(moveHistory.Last());
         displayListMove();
+    }
+    private void displayKingInCheck()
+    {
+        foreach (PieceView piece in pieceOnBoard)
+        {
+            if (piece == null || piece.pieceData is not King)
+                continue;
+
+            SpriteRenderer sr = piece.GetComponent<SpriteRenderer>();
+
+            bool isInCheck = !checkKingSafety(piece.pieceData.isWhite, board);
+            if(isInCheck)
+            {
+                Debug.Log("King at (" + piece.position.x + "," + piece.position.y + ") is in check!");
+            }
+
+            sr.color = isInCheck ? Color.red : Color.white;
+        }
     }
 
     private void displayMovedPiece(Move move)
