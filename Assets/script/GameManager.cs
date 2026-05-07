@@ -78,6 +78,7 @@ public class GameManage : MonoBehaviour
 
     public GameObject lastMovePrefab;
 
+    public GameObject gameMatchPanel;
     List<Piece> capturedWhitePieces = new List<Piece>();
     List<Piece> capturedBlackPieces = new List<Piece>();
 
@@ -99,9 +100,18 @@ public class GameManage : MonoBehaviour
     List<GameObject> activeMoveHighlight = new List<GameObject>();
 
     bool isPlayerWhite;
-
-    void reStartBoard()
+    public void EndingGame(CheckType result = CheckType.None, bool userWon = false)
     {
+        gameMatchPanel.SetActive(true);
+        gameMatchPanel.GetComponent<GameMatchScript>().SetResultText(result, userWon);
+    }
+    public void reStartBoard()
+    {
+        gameMatchPanel.SetActive(false);
+        activeGameObjects.ForEach(dot => Destroy(dot));
+        activeGameObjects.Clear();
+        activeMoveHighlight.ForEach(dot => Destroy(dot));
+        activeMoveHighlight.Clear();
         board = new Board();
         pieceViews = new PieceView[board.boardSize, board.boardSize];
         Debug.Log(pieceViews != null ? "pieceViews initialized successfully" : "Failed to initialize pieceViews");
@@ -296,12 +306,13 @@ public class GameManage : MonoBehaviour
                 Debug.Log("Checkmate! " + (gameTurnWhite ? "Black" : "White") + " wins!");
 
                 moveHistory.Last().checkType = CheckType.Checkmate;
-                //reStartBoard();
+                EndingGame(CheckType.Checkmate, isPlayerWhite != gameTurnWhite);
             }
             else
             {
                 Debug.Log("Stalemate! It's a draw!");
                 moveHistory.Last().checkType = CheckType.Stalemate;
+                EndingGame(CheckType.Stalemate, false);
             }
         }
         else
@@ -316,7 +327,7 @@ public class GameManage : MonoBehaviour
                     Debug.Log("Draw by 50-move rule!");
 
                     moveHistory.Last().checkType = CheckType.Stalemate;
-                    //reStartBoard();
+                    EndingGame(CheckType.Stalemate);
                 }
             }
             if (thisSidePieceCount == 1 || opponentPieceCount == 1)
@@ -327,7 +338,7 @@ public class GameManage : MonoBehaviour
                     Debug.Log("Draw by insufficient material!");
 
                     moveHistory.Last().checkType = CheckType.Stalemate;
-                    //reStartBoard();
+                    EndingGame(CheckType.Stalemate);
                 }
             }
 
@@ -819,7 +830,7 @@ public class GameManage : MonoBehaviour
     {
         activeMoveHighlight.ForEach(dot => Destroy(dot));
         activeMoveHighlight.Clear();
-        
+
         Vector2 spawnPos = new Vector2(changeXVector(move.fromX), changeYVector(move.fromY));
 
         GameObject fromMove = Instantiate(lastMovePrefab, spawnPos, Quaternion.identity);
