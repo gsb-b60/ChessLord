@@ -940,7 +940,7 @@ public class GameManage : MonoBehaviour
         Debug.Log("enpassant right " + enpassantRight);
 
 
-        Debug.Log("complete FEN: " + boardPosition + " " + (gameTurnWhite ? "w" : "b") + " " + castlelingRights + " " + enpassantRight + " [half move] [full move]");
+        Debug.Log("complete FEN: " + boardPosition + " " + (gameTurnWhite ? "w" : "b") + " " + castlelingRights + " " + enpassantRight + " 0 1");
 
     }
     private void displayKingInCheck()
