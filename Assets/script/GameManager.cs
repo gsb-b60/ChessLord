@@ -79,6 +79,7 @@ public class GameManage : MonoBehaviour
     public GameObject lastMovePrefab;
 
     public GameObject gameMatchPanel;
+
     List<Piece> capturedWhitePieces = new List<Piece>();
     List<Piece> capturedBlackPieces = new List<Piece>();
 
@@ -95,6 +96,8 @@ public class GameManage : MonoBehaviour
     public Move promoteMove;
     public ScrollRect moveListScroll;
     private GameObject currentListingMove;
+
+
 
 
     List<GameObject> activeGameObjects = new List<GameObject>();
@@ -116,6 +119,12 @@ public class GameManage : MonoBehaviour
         GameData.changeSide();
         Debug.Log("Selected side after change: " + GameData.selectedSide);
         reStartBoard();
+    }
+    void MakeEngineMove()
+    {
+        // You don't need a reference, just call the Instance
+        StockfishManager.Instance.SendCommand("position startpos moves e2e4 e7e5");
+        StockfishManager.Instance.SendCommand("go depth 12");
     }
     public void reStartBoard()
     {
@@ -238,7 +247,7 @@ public class GameManage : MonoBehaviour
         {
             if (simulateMoveAndCheckSafety(piece.pieceData, move))
             {
-                AddDot(move, false, true,true);
+                AddDot(move, false, true, true);
             }
 
         }
@@ -853,6 +862,7 @@ public class GameManage : MonoBehaviour
 
     private void ExportFEN()
     {
+        MakeEngineMove();
         string boardPosition = "";
 
         for (int i = 0; i < board.boardSize; i++)
