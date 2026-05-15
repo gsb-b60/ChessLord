@@ -9,7 +9,7 @@ public class StockfishManager : MonoBehaviour
     private Process _engineProcess;
     private StreamWriter _engineInput;
     private ConcurrentQueue<string> _outputQueue = new ConcurrentQueue<string>();
-    
+
     // Flags to track connection status
     private bool _isInitialized = false;
     private bool _isReady = false;
@@ -19,7 +19,7 @@ public class StockfishManager : MonoBehaviour
     void Start()
     {
         // The string here MUST match the file name exactly (including the .exe)
-string path = Path.Combine(Application.streamingAssetsPath, "stockfish-windows-x86-64-avx2.exe");
+        string path = Path.Combine(Application.streamingAssetsPath, "stockfish-windows-x86-64-avx2.exe");
 
         // Success Check 1: File Existence
         if (!File.Exists(path))
@@ -35,16 +35,17 @@ string path = Path.Combine(Application.streamingAssetsPath, "stockfish-windows-x
         _engineProcess.StartInfo.RedirectStandardOutput = true;
         _engineProcess.StartInfo.CreateNoWindow = true;
 
-        _engineProcess.OutputDataReceived += (sender, e) => {
+        _engineProcess.OutputDataReceived += (sender, e) =>
+        {
             if (!string.IsNullOrEmpty(e.Data)) _outputQueue.Enqueue(e.Data);
         };
 
-        try 
+        try
         {
             _engineProcess.Start();
             _engineProcess.BeginOutputReadLine();
             _engineInput = _engineProcess.StandardInput;
-            
+
             UnityEngine.Debug.Log("[Stockfish] Process started. Starting UCI handshake...");
 
             // Initialize UCI
@@ -108,6 +109,15 @@ string path = Path.Combine(Application.streamingAssetsPath, "stockfish-windows-x
     private void OnBestMoveFound(string move)
     {
         UnityEngine.Debug.Log($"<color=yellow>[Stockfish] Recommended Move: {move}</color>");
+        if (GameManage.instance != null)
+        {
+            UnityEngine.Debug.Log("[Stockfish] Successfully accessed GameManage instance.");
+            GameManage.instance.makeEngineMove(Move.convertUCIToMove(move));
+        }
+        else
+        {
+            UnityEngine.Debug.LogError("[Stockfish] GameManage instance is null!");
+        }
     }
 
     void OnApplicationQuit()

@@ -3885,7 +3885,7 @@ MonoBehaviour:
   uiTemplate: {fileID: 9197481963319205126, guid: 5fc0918d1f3ec184e9dcc608bb837768, type: 3}
   blackBishop: {fileID: -2492783938245888365, guid: 5a4b562c71bcec34d9c6bd5e03f6838f, type: 3}
   whiteBishop: {fileID: -858063990095890686, guid: 5a83c25c3bf6494499ef960faf82b15b, type: 3}
-  blackKnight: {fileID: -3187116828349431946, guid: 62ebdc291c9a0d84fbce3431bdae24ac, type: 3}
+  blackKnight: {fileID: -3187116828349431946, guid: acd59858f9128aa46a726f25daff4535, type: 3}
   whiteKnight: {fileID: 4865936209785224243, guid: 45db79a825d1c0f4c9cf0b3756c51187, type: 3}
   blackRook: {fileID: 4508511476439823426, guid: ac5e8c941ac0da443909b76db73bfaac, type: 3}
   whiteRook: {fileID: 3952613839347764632, guid: 3d4ac8a1f29452745b36f3c074d08771, type: 3}

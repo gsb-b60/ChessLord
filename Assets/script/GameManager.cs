@@ -120,10 +120,10 @@ public class GameManage : MonoBehaviour
         Debug.Log("Selected side after change: " + GameData.selectedSide);
         reStartBoard();
     }
-    void MakeEngineMove()
+    public void getEngineMove(string fen)
     {
         // You don't need a reference, just call the Instance
-        StockfishManager.Instance.SendCommand("position startpos moves e2e4 e7e5");
+        StockfishManager.Instance.SendCommand($"position fen {fen}");
         StockfishManager.Instance.SendCommand("go depth 12");
     }
     public void reStartBoard()
@@ -255,6 +255,72 @@ public class GameManage : MonoBehaviour
         //addEnpassantMove(piece);
     }
 
+    public void makeEngineMove(Move move)
+    {
+        Debug.Log(move.ToString());
+
+        movePiecesByEngineLogic(move);
+
+        moveHistory.Add(move);
+
+
+        isPieceSelected = false;
+        clearDots();
+
+        gameTurnWhite = !gameTurnWhite;
+        moveHistory.Last().checkType = !checkKingSafety(gameTurnWhite, board) ? CheckType.Check : CheckType.None;
+
+        displayKingInCheck();
+        checkEndGame();
+        displayMovedPiece(moveHistory.Last());
+        displayListMove();
+        ExportFEN();
+    }
+    private void movePiecesByEngineLogic(Move move)
+    {
+        PieceView piece = pieceViews[move.fromX, move.fromY];
+
+        if (piece == null)
+        {
+            Debug.LogError($"No piece found at {move.fromX}, {move.fromY}");
+            return;
+        }
+
+        // 2. Update Physical/Visual Position
+        Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
+        piece.transform.position = spawnPos;
+
+        // 3. Update Backend Logic (Data Board)
+        board.board[move.fromX, move.fromY].hasMoved = true;
+        board.board[move.toX, move.toY] = piece.pieceData;
+        board.board[move.fromX, move.fromY] = null; // Cleaned up to use move.from
+
+        // 4. Update View Tracking (UI/Reference Board)
+        pieceViews[move.toX, move.toY] = piece;
+        pieceViews[move.fromX, move.fromY] = null;
+
+        // 5. Update Piece Internal State
+        piece.position = new Vector2Int(move.toX, move.toY);
+        piece.pieceData.hasMoved = true;
+
+        // 6. Handle Special Rules (Promotion)
+        // if (piece.pieceData is Pawn)
+        // {
+        //     bool isWhitePromotion = piece.pieceData.isWhite && move.toY == 7;
+        //     bool isBlackPromotion = !piece.pieceData.isWhite && move.toY == 0;
+
+        //     if (isWhitePromotion || isBlackPromotion)
+        //     {
+        //         // Note: I used 'piece' here instead of 'selectedPiece' 
+        //         // to ensure the promotion happens to the correct object.
+        //         piece.position = new Vector2Int(move.toX, move.toY);
+        //         promoteMenu.OpenPromoteCanvas(piece.pieceData.isWhite);
+
+        //         pawnPromte = piece.pieceData;
+        //         promoteMove = move;
+        //     }
+        // }
+    }
 
     private List<Move> getAllPossibleMoves(PieceView piece)
     {
@@ -862,7 +928,7 @@ public class GameManage : MonoBehaviour
 
     private void ExportFEN()
     {
-        MakeEngineMove();
+
         string boardPosition = "";
 
         for (int i = 0; i < board.boardSize; i++)
@@ -948,9 +1014,18 @@ public class GameManage : MonoBehaviour
         }
 
         Debug.Log("enpassant right " + enpassantRight);
-
-
         Debug.Log("complete FEN: " + boardPosition + " " + (gameTurnWhite ? "w" : "b") + " " + castlelingRights + " " + enpassantRight + " 0 1");
+
+        string fen =
+            boardPosition + " " +
+            (gameTurnWhite ? "w" : "b") + " " + castlelingRights + " " +
+            enpassantRight + " " +
+            "0 1";
+
+        if (gameTurnWhite != isPlayerWhite)
+        {
+            getEngineMove(fen);
+        }
 
     }
     private void displayKingInCheck()
