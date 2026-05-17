@@ -31,3 +31,5 @@ echo Builds/ >> .gitignore
 
 .DS_Store
 Thumbs.db
+
+Assets/StreamingAssets/*.exe
