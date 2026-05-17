@@ -286,6 +286,35 @@ public class GameManage : MonoBehaviour
             return;
         }
 
+        PieceView targetPiece = pieceViews[move.toX, move.toY];
+
+        if (targetPiece != null)
+        {
+            //Debug.Log("Attacking piece at (" + to.x + "," + to.y + "): " + targetPiece.pieceData.GetType().Name);
+            appendCapturedPiece(targetPiece.pieceData);
+            Destroy(targetPiece.gameObject);
+            board.board[move.toX, move.toY] = null;
+            pieceOnBoard.Remove(targetPiece);
+
+            move.isAttack = true;
+
+        }
+
+
+        if (piece.pieceData is King && Mathf.Abs(move.toX - move.fromX) == 2)
+        {
+            HandleRookCastling(move);
+            move.isCastle = true;
+        }
+
+
+
+
+
+
+
+
+
         // 2. Update Physical/Visual Position
         Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
         piece.transform.position = spawnPos;
@@ -322,6 +351,46 @@ public class GameManage : MonoBehaviour
         // }
     }
 
+    private void HandleRookCastling(Move move)
+    {
+        int y = move.toY;
+        int rookFromX, rookToX;
+
+        // Kingside (e.g., e1 to g1)
+        if (move.toX == 6)
+        {
+            rookFromX = 7;
+            rookToX = 5;
+        }
+        // Queenside (e.g., e1 to c1)
+        else
+        {
+            rookFromX = 0;
+            rookToX = 3;
+        }
+
+        PieceView rookView = pieceViews[rookFromX, y];
+        if (rookView != null)
+        {
+            // 1. Update Physical Position
+            rookView.transform.position = new Vector2(changeXVector(rookToX), changeYVector(y));
+
+            // 2. Update Backend Data Board
+            board.board[rookToX, y] = rookView.pieceData;
+            board.board[rookFromX, y] = null;
+
+            // 3. Update PieceView Array
+            pieceViews[rookToX, y] = rookView;
+            pieceViews[rookFromX, y] = null;
+
+            // 4. Update internal piece state
+            rookView.position = new Vector2Int(rookToX, y);
+            rookView.pieceData.hasMoved = true;
+
+
+        }
+    }
+
     private List<Move> getAllPossibleMoves(PieceView piece)
     {
         List<Move> allMoves = new List<Move>();
@@ -347,8 +416,6 @@ public class GameManage : MonoBehaviour
             {
                 //AddDot(move, false, false, true);
                 allMoves.Add(move);
-
-
             }
 
         }
