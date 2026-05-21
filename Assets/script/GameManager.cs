@@ -259,9 +259,9 @@ public class GameManage : MonoBehaviour
     {
         Debug.Log(move.ToString());
 
-        movePiecesByEngineLogic(move);
+        Move engineMove = movePiecesByEngineLogic(move);
 
-        moveHistory.Add(move);
+        moveHistory.Add(engineMove);
 
 
         isPieceSelected = false;
@@ -276,21 +276,21 @@ public class GameManage : MonoBehaviour
         displayListMove();
         ExportFEN();
     }
-    private void movePiecesByEngineLogic(Move move)
+    private Move movePiecesByEngineLogic(Move move)
     {
         PieceView piece = pieceViews[move.fromX, move.fromY];
 
         if (piece == null)
         {
             Debug.LogError($"No piece found at {move.fromX}, {move.fromY}");
-            return;
+            return move;
         }
 
         PieceView targetPiece = pieceViews[move.toX, move.toY];
 
         if (targetPiece != null)
         {
-            //Debug.Log("Attacking piece at (" + to.x + "," + to.y + "): " + targetPiece.pieceData.GetType().Name);
+            Debug.Log("Attacking piece at (" + move.toX + "," + move.toY + "): " + targetPiece.pieceData.GetType().Name);
             appendCapturedPiece(targetPiece.pieceData);
             Destroy(targetPiece.gameObject);
             board.board[move.toX, move.toY] = null;
@@ -303,21 +303,17 @@ public class GameManage : MonoBehaviour
 
         if (piece.pieceData is King && Mathf.Abs(move.toX - move.fromX) == 2)
         {
+            Debug.Log("this is a engine castling move");
             HandleRookCastling(move);
             move.isCastle = true;
         }
 
 
-
-
-
-
-
-
-
         // 2. Update Physical/Visual Position
         Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
         piece.transform.position = spawnPos;
+
+
 
         // 3. Update Backend Logic (Data Board)
         board.board[move.fromX, move.fromY].hasMoved = true;
@@ -349,6 +345,7 @@ public class GameManage : MonoBehaviour
         //         promoteMove = move;
         //     }
         // }
+        return move;
     }
 
     private void HandleRookCastling(Move move)
@@ -900,73 +897,66 @@ public class GameManage : MonoBehaviour
         if (dot.isAttackMove)
         {
 
-            // Debug.Log($"Performing attack move... {from.x},{from.y} to {to.x},{to.y}");
-            // Debug.Log("Attack move from (" + from.x + "," + from.y + ") to (" + to.x + "," + to.y + ")");
+            Debug.Log($"Performing attack move... {from.x},{from.y} to {to.x},{to.y}");
+            Debug.Log("Attack move from (" + from.x + "," + from.y + ") to (" + to.x + "," + to.y + ")");
             PieceView targetPiece = pieceViews[to.x, to.y];
-            // Debug.Log("Target piece at (" + to.x + "," + to.y + "): " + targetPiece.pieceData.GetType().Name);
+
             if (targetPiece != null)
             {
-                //Debug.Log("Attacking piece at (" + to.x + "," + to.y + "): " + targetPiece.pieceData.GetType().Name);
+                Debug.Log("Attacking piece at (" + to.x + "," + to.y + "): " + targetPiece.pieceData.GetType().Name);
                 appendCapturedPiece(targetPiece.pieceData);
                 Destroy(targetPiece.gameObject);
                 board.board[to.x, to.y] = null;
+                pieceViews[to.x, to.y] = null;
                 pieceOnBoard.Remove(targetPiece);
 
             }
+            MovePiece(selectedPiece, move);
             originalMove.isAttack = true;
         }
-        if (dot.isCastleMove)
+        else if (dot.isCastleMove)
         {
-            if (selectedPiece.pieceData.isWhite)
-            {
-                MovePiece(selectedPiece, move);
-                if (move.toX == 2)
-                {
-                    Debug.Log("Castle move: Moving rook from (0," + move.toY + ") to (3," + move.toY + ")");
-                    MovePiece(pieceViews[0, move.toY], new Move(0, 0, move.toX + 1, move.toY));
-                }
-                if (move.toX == 6)
-                {
-                    Debug.Log("Castle move: Moving rook from (7," + move.toY + ") to (5," + move.toY + ")");
-                    MovePiece(pieceViews[7, move.toY], new Move(0, 0, move.toX - 1, move.toY));
-                }
+            Debug.Log($"Performing castling move... {from.x},{from.y} to {to.x},{to.y}");
 
-            }
-            else
+            MovePiece(selectedPiece, move);
+
+            if (move.toX == 2)
             {
-                MovePiece(selectedPiece, move);
-                if (move.toX == 2)
-                {
-                    MovePiece(pieceViews[0, move.toY], new Move(0, 0, move.toX + 1, move.toY));
-                }
-                if (move.toX == 6)
-                {
-                    MovePiece(pieceViews[7, move.toY], new Move(0, 0, move.toX - 1, move.toY));
-                }
+                Debug.Log($"Castle move: Moving rook from (0,{move.toY}) to (3,{move.toY})");
+
+                MovePiece(
+                    pieceViews[0, move.toY],
+                    new Move(0, move.toY, move.toX + 1, move.toY)
+                );
             }
 
+            if (move.toX == 6)
+            {
+                Debug.Log($"Castle move: Moving rook from (7,{move.toY}) to (5,{move.toY})");
+
+                MovePiece(
+                    pieceViews[7, move.toY],
+                    new Move(7, move.toY, move.toX - 1, move.toY)
+                );
+            }
         }
-        if (dot.isEnPassant)
+        else if (dot.isEnPassant)
         {
             MovePiece(selectedPiece, move);
-            if (move.toX < move.fromX)
+
+            PieceView targetPiece = pieceViews[to.x, from.y];
+
+            if (targetPiece != null)
             {
-                PieceView targetPiece = pieceViews[from.x - 1, from.y];
-                if (targetPiece != null)
-                {
-                    Destroy(targetPiece.gameObject);
-                    board.board[from.x - 1, from.y] = null;
-                }
+                Destroy(targetPiece.gameObject);
+
+                board.board[to.x, from.y] = null;
+                pieceViews[to.x, from.y] = null;
+
+                pieceOnBoard.Remove(targetPiece);
             }
-            else
-            {
-                PieceView targetPiece = pieceViews[from.x + 1, from.y];
-                if (targetPiece != null)
-                {
-                    Destroy(targetPiece.gameObject);
-                    board.board[from.x + 1, from.y] = null;
-                }
-            }
+
+            originalMove.isAttack = true;
         }
         else
         {
@@ -1133,9 +1123,13 @@ public class GameManage : MonoBehaviour
     {
         Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
         piece.transform.position = spawnPos;
-        board.board[move.fromX, move.fromY].hasMoved = true;
+        // if (board.board[move.fromX, move.fromY] != null)
+        // {
+        //     board.board[move.fromX, move.fromY].hasMoved = true;
+        // }
+
         board.board[move.toX, move.toY] = piece.pieceData;
-        board.board[piece.position.x, piece.position.y] = null;
+        board.board[move.fromX, move.fromY] = null;
 
         pieceViews[move.toX, move.toY] = piece;
         pieceViews[piece.position.x, piece.position.y] = null;

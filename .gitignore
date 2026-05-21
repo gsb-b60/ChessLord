@@ -33,3 +33,5 @@ echo Builds/ >> .gitignore
 Thumbs.db
 
 Assets/StreamingAssets/*.exe
+Assets/StreamingAssets/*
+!Assets/StreamingAssets/.gitkeep
