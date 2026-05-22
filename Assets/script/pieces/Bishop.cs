@@ -10,55 +10,24 @@ public class Bishop : Piece
     public override List<Move> getAllValidMoves(Board board, int x, int y)
     {
         List<Move> validMoves = new List<Move>();
-        for (int i = 1; i < board.boardSize; i++)
+        int[,] directions = { { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } };
+
+        for (int d = 0; d < directions.GetLength(0); d++)
         {
-            if (x + i < board.boardSize && y + i < board.boardSize)
+            int dx = directions[d, 0];
+            int dy = directions[d, 1];
+
+            for (int i = 1; i < board.boardSize; i++)
             {
-                if (board.board[x + i, y + i] == null)
-                {
-                    validMoves.Add(new Move(x, y, x + i, y + i));
-                }
-                else
-                {
+                int nx = x + i * dx;
+                int ny = y + i * dy;
+
+                if (nx < 0 || nx >= board.boardSize || ny < 0 || ny >= board.boardSize)
                     break;
-                }
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x - i >= 0 && y + i < board.boardSize)
-            {
-                if (board.board[x - i, y + i] == null)
+
+                if (board.board[nx, ny] == null)
                 {
-                    validMoves.Add(new Move(x, y, x - i, y + i));
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x + i < board.boardSize && y - i >= 0)
-            {
-                if (board.board[x + i, y - i] == null)
-                {
-                    validMoves.Add(new Move(x, y, x + i, y - i));
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x - i >= 0 && y - i >= 0)
-            {
-                if (board.board[x - i, y - i] == null)
-                {
-                    validMoves.Add(new Move(x, y, x - i, y - i));
+                    validMoves.Add(new Move(x, y, nx, ny));
                 }
                 else
                 {
@@ -70,86 +39,33 @@ public class Bishop : Piece
     }
     public override List<Move> getAttackMove(Board board, int x, int y)
     {
-        List<Move> validMoves = new List<Move>();
-        for (int i = 1; i < board.boardSize; i++)
+        List<Move> attackMoves = new List<Move>();
+        int[,] directions = { { 1, 1 }, { -1, 1 }, { 1, -1 }, { -1, -1 } };
+
+        for (int d = 0; d < directions.GetLength(0); d++)
         {
-            if (x + i < board.boardSize && y + i < board.boardSize)
+            int dx = directions[d, 0];
+            int dy = directions[d, 1];
+
+            for (int i = 1; i < board.boardSize; i++)
             {
-                if (board.board[x + i, y + i] != null && board.board[x + i, y + i].isWhite != this.isWhite)
+                int nx = x + i * dx;
+                int ny = y + i * dy;
+
+                if (nx < 0 || nx >= board.boardSize || ny < 0 || ny >= board.boardSize)
+                    break;
+
+                if (board.board[nx, ny] != null)
                 {
-                    if (board.board[x + i, y + i].isWhite != this.isWhite)
+                    if (board.board[nx, ny].isWhite != this.isWhite)
                     {
-                        validMoves.Add(new Move(x, y, x + i, y + i));
-                        break;
+                        attackMoves.Add(new Move(x, y, nx, ny));
                     }
-                    else
-                    {
-                        break;
-                    }
+                    break;
                 }
-                
             }
         }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x - i >= 0 && y + i < board.boardSize)
-            {
-                if (board.board[x - i, y + i] != null)
-                {
-                    if (board.board[x - i, y + i].isWhite != this.isWhite)
-                    {
-                        validMoves.Add(new Move(x, y, x - i, y + i));
-                        break;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                    
-                }
-            
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x + i < board.boardSize && y - i >= 0)
-            {
-                if (board.board[x + i, y - i] != null )
-                {
-                    if (board.board[x + i, y - i].isWhite != this.isWhite)
-                    {
-                        validMoves.Add(new Move(x, y, x + i, y - i));
-                        break;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                
-                
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x - i >= 0 && y - i >= 0)
-            {
-                if (board.board[x - i, y - i] != null )
-                {
-                    if (board.board[x - i, y - i].isWhite != this.isWhite)
-                    {
-                        validMoves.Add(new Move(x, y, x - i, y - i));
-                        break;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                
-            }
-        }
-        return validMoves;
+        return attackMoves;
     }
 
 

@@ -9,62 +9,27 @@ public class Rook : Piece
     public override List<Move> getAllValidMoves(Board board, int x, int y)
     {
         List<Move> validMoves = new List<Move>();
-        for (int i = 1; i < board.boardSize; i++)
+        int[,] directions = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+
+        for (int d = 0; d < directions.GetLength(0); d++)
         {
-            if (x + i < board.boardSize)
+            int dx = directions[d, 0];
+            int dy = directions[d, 1];
+
+            for (int i = 1; i < board.boardSize; i++)
             {
-                if (board.board[x + i, y] == null)
-                {
-                    validMoves.Add(new Move(x, y, x + i, y));
-                }
-                else
-                {
-                    
+                int nx = x + i * dx;
+                int ny = y + i * dy;
+
+                if (nx < 0 || nx >= board.boardSize || ny < 0 || ny >= board.boardSize)
                     break;
-                }
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x - i >= 0)
-            {
-                if (board.board[x - i, y] == null)
+
+                if (board.board[nx, ny] == null)
                 {
-                    validMoves.Add(new Move(x, y, x - i, y));
+                    validMoves.Add(new Move(x, y, nx, ny));
                 }
                 else
                 {
-                    
-                    break;
-                }
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (y + i < board.boardSize)
-            {
-                if (board.board[x, y + i] == null)
-                {
-                    validMoves.Add(new Move(x, y, x, y + i));
-                }
-                else
-                {
-                   
-                    break;
-                }
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (y - i >= 0)
-            {
-                if (board.board[x, y - i] == null)
-                {
-                    validMoves.Add(new Move(x, y, x, y - i));
-                }
-                else
-                {
-                    
                     break;
                 }
             }
@@ -74,68 +39,32 @@ public class Rook : Piece
 
     public override List<Move> getAttackMove(Board board, int x, int y)
     {
-        List<Move> validMoves = new List<Move>();
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (x + i < board.boardSize)
-            {
-                if (board.board[x + i, y] != null && board.board[x + i, y].isWhite == this.isWhite)
-                {
-                    break;
-                }
-                if (board.board[x + i, y] != null && board.board[x + i, y].isWhite != this.isWhite)
-                {
-                    validMoves.Add(new Move(x, y, x + i, y));
-                    break;
-                }
+        List<Move> attackMoves = new List<Move>();
+        int[,] directions = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
+        for (int d = 0; d < directions.GetLength(0); d++)
         {
-            if (x - i >= 0)
+            int dx = directions[d, 0];
+            int dy = directions[d, 1];
+
+            for (int i = 1; i < board.boardSize; i++)
             {
-                if (board.board[x - i, y] != null && board.board[x - i, y].isWhite == this.isWhite)
-                {
+                int nx = x + i * dx;
+                int ny = y + i * dy;
+
+                if (nx < 0 || nx >= board.boardSize || ny < 0 || ny >= board.boardSize)
                     break;
-                }
-                if (board.board[x - i, y] != null && board.board[x - i, y].isWhite != this.isWhite)
+
+                if (board.board[nx, ny] != null)
                 {
-                    validMoves.Add(new Move(x, y, x - i, y));
+                    if (board.board[nx, ny].isWhite != this.isWhite)
+                    {
+                        attackMoves.Add(new Move(x, y, nx, ny));
+                    }
                     break;
                 }
             }
         }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (y + i < board.boardSize)
-            {
-                if (board.board[x, y + i] != null && board.board[x, y + i].isWhite == this.isWhite)
-                {
-                    break;
-                }
-                if (board.board[x, y + i] != null && board.board[x, y + i].isWhite != this.isWhite)
-                {
-                    validMoves.Add(new Move(x, y, x, y + i));
-                    break;
-                }
-            }
-        }
-        for (int i = 1; i < board.boardSize; i++)
-        {
-            if (y - i >= 0)
-            {
-                if (board.board[x, y - i] != null && board.board[x, y - i].isWhite == this.isWhite)
-                {
-                    break;
-                }
-                if (board.board[x, y - i] != null && board.board[x, y - i].isWhite != this.isWhite)
-                {
-                    validMoves.Add(new Move(x, y, x, y - i));
-                    break;
-                }
-            }
-        }
-        return validMoves;
+        return attackMoves;
     }
 }

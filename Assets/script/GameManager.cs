@@ -158,13 +158,35 @@ public class GameManage : MonoBehaviour
         activeGameObjects.Clear();
         activeMoveHighlight.ForEach(dot => Destroy(dot));
         activeMoveHighlight.Clear();
+        
+        // Clear captured pieces UI and data
+        capturedWhitePieces.Clear();
+        capturedBlackPieces.Clear();
+        foreach (Transform child in userCaptureContainer.transform) Destroy(child.gameObject);
+        foreach (Transform child in computerCaptureContainer.transform) Destroy(child.gameObject);
+
+        // Clear move list UI
+        if (listMovePanel != null)
+        {
+            foreach (Transform child in listMovePanel.transform)
+            {
+                if (child.gameObject != moveEvenPrefab && child.gameObject != moveOddPrefab)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+        }
+        currentListingMove = null;
+
         board = new Board();
         pieceViews = new PieceView[board.boardSize, board.boardSize];
         Debug.Log(pieceViews != null ? "pieceViews initialized successfully" : "Failed to initialize pieceViews");
+        
         moveHistory.Clear();
         pieceOnBoard.Clear();
-        activeGameObjects.ForEach(dot => Destroy(dot));
-        activeGameObjects.Clear();
+        isPieceSelected = false;
+        selectedPiece = null;
+
         gameTurnWhite = true;
 
         if (ChessEngineManager.Instance != null)
@@ -208,6 +230,7 @@ public class GameManage : MonoBehaviour
             board.board[i, 7] = board.blackPieces[i];
         }
         displayBoard(board);
+        ExportFEN();
     }
     private void Awake()
     {
@@ -874,30 +897,32 @@ public class GameManage : MonoBehaviour
     }
     public void displayListMove()
     {
+        if (moveHistory.Count == 0) return;
+
         if (!gameTurnWhite)
         {
-
             currentListingMove = null;
             int orderOfMove = moveHistory.Count / 2 + 1;
             string textMove = moveHistory.Last().ToString();
-            if ((moveHistory.Count / 2) % 2 == 0)
+            
+            GameObject prefabToUse = (moveHistory.Count / 2) % 2 == 0 ? moveEvenPrefab : moveOddPrefab;
+            
+            if (prefabToUse != null)
             {
-                currentListingMove = Instantiate(moveEvenPrefab, listMovePanel.transform);
-            }
-            else
-            {
-                currentListingMove = Instantiate(moveOddPrefab, listMovePanel.transform);
+                currentListingMove = Instantiate(prefabToUse, listMovePanel.transform);
+                currentListingMove.SetActive(true);
+                currentListingMove.GetComponent<ListMoveScript>().displayListMove(orderOfMove, textMove);
 
+                Canvas.ForceUpdateCanvases();
+                if (moveListScroll != null) moveListScroll.verticalNormalizedPosition = 0f;
             }
-            currentListingMove.SetActive(true);
-            currentListingMove.GetComponent<ListMoveScript>().displayListMove(orderOfMove, textMove);
-
-            Canvas.ForceUpdateCanvases();
-            moveListScroll.verticalNormalizedPosition = 0f;
         }
         else
         {
-            currentListingMove.GetComponent<ListMoveScript>().displayBlackMove(moveHistory.Last().ToString());
+            if (currentListingMove != null)
+            {
+                currentListingMove.GetComponent<ListMoveScript>().displayBlackMove(moveHistory.Last().ToString());
+            }
         }
 
     }
@@ -1070,7 +1095,7 @@ public class GameManage : MonoBehaviour
         }
         Debug.Log("Castling rights: " + castlelingRights);
         string enpassantRight = "-";
-        if (moveHistory.Last().isPawnLongMove)
+        if (moveHistory.Count > 0 && moveHistory.Last().isPawnLongMove)
         {
             foreach (PieceView piece in pieceOnBoard)
             {

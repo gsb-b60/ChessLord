@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -13,6 +14,9 @@ namespace ChessEngine
         private Process _engineProcess;
         private TcpClient _client;
         private NetworkStream _stream;
+        private StreamReader _reader;
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
+
         private const string Host = "127.0.0.1";
         private const int Port = 8765;
 
@@ -67,6 +71,7 @@ namespace ChessEngine
                     _client = new TcpClient();
                     await _client.ConnectAsync(Host, Port);
                     _stream = _client.GetStream();
+                    _reader = new StreamReader(_stream, Encoding.UTF8);
                     UnityEngine.Debug.Log("[ChessEngine] Connected to TCP server.");
                     return;
                 }
@@ -88,15 +93,19 @@ namespace ChessEngine
                 throw new InvalidOperationException("Not connected to chess engine.");
             }
 
+            await _lock.WaitAsync();
             try
             {
                 string json = JsonUtility.ToJson(request) + "\n";
                 byte[] data = Encoding.UTF8.GetBytes(json);
                 await _stream.WriteAsync(data, 0, data.Length);
 
-                byte[] buffer = new byte[8192];
-                int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length);
-                string responseJson = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                string responseJson = await _reader.ReadLineAsync();
+                
+                if (string.IsNullOrEmpty(responseJson))
+                {
+                    throw new Exception("Received empty response from engine.");
+                }
 
                 return JsonUtility.FromJson<EngineResponse>(responseJson);
             }
@@ -105,10 +114,16 @@ namespace ChessEngine
                 UnityEngine.Debug.LogError($"[ChessEngine] Error sending command '{request.cmd}': {ex.Message}");
                 return new EngineResponse { ok = false, error = ex.Message };
             }
+            finally
+            {
+                _lock.Release();
+            }
         }
 
         public void Dispose()
         {
+            _lock?.Dispose();
+            _reader?.Dispose();
             _stream?.Dispose();
             _client?.Close();
             _client?.Dispose();

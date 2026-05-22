@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace ChessEngine
 
         private ChessEngineService _service;
         private bool _isInitializing = false;
+        private TaskCompletionSource<bool> _initTcs;
 
         private void Awake()
         {
@@ -35,9 +37,19 @@ namespace ChessEngine
         public async Task<bool> EnsureConnectedAsync()
         {
             if (_service.IsConnected) return true;
-            if (_isInitializing) return false;
+            
+            if (_isInitializing)
+            {
+                if (_initTcs != null)
+                {
+                    return await _initTcs.Task;
+                }
+                return false; // Should not happen with _isInitializing check
+            }
 
             _isInitializing = true;
+            _initTcs = new TaskCompletionSource<bool>();
+            
             try
             {
                 await _service.InitializeAsync();
@@ -46,15 +58,19 @@ namespace ChessEngine
                 var request = new EngineRequest("new_game") { level = defaultLevel };
                 await _service.SendCommandAsync(request);
                 
+                _initTcs.SetResult(true);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                UnityEngine.Debug.LogError($"[ChessEngineManager] Connection failed: {ex.Message}");
+                _initTcs.SetResult(false);
                 return false;
             }
             finally
             {
                 _isInitializing = false;
+                _initTcs = null;
             }
         }
 
