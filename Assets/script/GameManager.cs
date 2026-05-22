@@ -162,6 +162,7 @@ public class GameManage : MonoBehaviour
         pieceViews = new PieceView[board.boardSize, board.boardSize];
         Debug.Log(pieceViews != null ? "pieceViews initialized successfully" : "Failed to initialize pieceViews");
         moveHistory.Clear();
+        pieceOnBoard.Clear();
         activeGameObjects.ForEach(dot => Destroy(dot));
         activeGameObjects.Clear();
         gameTurnWhite = true;
@@ -292,20 +293,13 @@ public class GameManage : MonoBehaviour
 
         Move engineMove = movePiecesByEngineLogic(move);
 
-        moveHistory.Add(engineMove);
+        if (move.promoteTo != PieceType.None)
+        {
+            promotePiece(engineMove.pieceView.pieceData, move.promoteTo, engineMove);
+            return;
+        }
 
-
-        isPieceSelected = false;
-        clearDots();
-
-        gameTurnWhite = !gameTurnWhite;
-        moveHistory.Last().checkType = !checkKingSafety(gameTurnWhite, board) ? CheckType.Check : CheckType.None;
-
-        displayKingInCheck();
-        checkEndGame();
-        displayMovedPiece(moveHistory.Last());
-        displayListMove();
-        ExportFEN();
+        CompleteTurn(engineMove);
     }
     private Move movePiecesByEngineLogic(Move move)
     {
@@ -316,6 +310,7 @@ public class GameManage : MonoBehaviour
             Debug.LogError($"No piece found at {move.fromX}, {move.fromY}");
             return move;
         }
+        move.pieceView = piece;
 
         PieceView targetPiece = pieceViews[move.toX, move.toY];
 
@@ -909,95 +904,9 @@ public class GameManage : MonoBehaviour
 
 
 
-    public void onDotClicked(SuggestDot dot)
+    private void CompleteTurn(Move move)
     {
-        if (!isPieceSelected) return;
-
-        Vector2Int from = selectedPiece.position;
-        Vector2Int to = dot.position;
-
-        Move move = new Move(from.x, from.y, to.x, to.y);
-
-
-        Move originalMove = dot.move;
-
-        originalMove.pieceView = pieceViews[from.x, from.y];
-
-        // displayListMove();
-
-        if (dot.isAttackMove)
-        {
-
-            Debug.Log($"Performing attack move... {from.x},{from.y} to {to.x},{to.y}");
-            Debug.Log("Attack move from (" + from.x + "," + from.y + ") to (" + to.x + "," + to.y + ")");
-            PieceView targetPiece = pieceViews[to.x, to.y];
-
-            if (targetPiece != null)
-            {
-                Debug.Log("Attacking piece at (" + to.x + "," + to.y + "): " + targetPiece.pieceData.GetType().Name);
-                appendCapturedPiece(targetPiece.pieceData);
-                Destroy(targetPiece.gameObject);
-                board.board[to.x, to.y] = null;
-                pieceViews[to.x, to.y] = null;
-                pieceOnBoard.Remove(targetPiece);
-
-            }
-            MovePiece(selectedPiece, move);
-            originalMove.isAttack = true;
-        }
-        else if (dot.isCastleMove)
-        {
-            Debug.Log($"Performing castling move... {from.x},{from.y} to {to.x},{to.y}");
-
-            MovePiece(selectedPiece, move);
-
-            if (move.toX == 2)
-            {
-                Debug.Log($"Castle move: Moving rook from (0,{move.toY}) to (3,{move.toY})");
-
-                MovePiece(
-                    pieceViews[0, move.toY],
-                    new Move(0, move.toY, move.toX + 1, move.toY)
-                );
-            }
-
-            if (move.toX == 6)
-            {
-                Debug.Log($"Castle move: Moving rook from (7,{move.toY}) to (5,{move.toY})");
-
-                MovePiece(
-                    pieceViews[7, move.toY],
-                    new Move(7, move.toY, move.toX - 1, move.toY)
-                );
-            }
-        }
-        else if (dot.isEnPassant)
-        {
-            MovePiece(selectedPiece, move);
-
-            PieceView targetPiece = pieceViews[to.x, from.y];
-
-            if (targetPiece != null)
-            {
-                Destroy(targetPiece.gameObject);
-
-                board.board[to.x, from.y] = null;
-                pieceViews[to.x, from.y] = null;
-
-                pieceOnBoard.Remove(targetPiece);
-            }
-
-            originalMove.isAttack = true;
-        }
-        else
-        {
-            MovePiece(selectedPiece, move);
-        }
-
-
-        moveHistory.Add(originalMove);
-
-
+        moveHistory.Add(move);
         isPieceSelected = false;
         clearDots();
 
@@ -1009,7 +918,80 @@ public class GameManage : MonoBehaviour
         displayMovedPiece(moveHistory.Last());
         displayListMove();
         ExportFEN();
+    }
 
+    public void onDotClicked(SuggestDot dot)
+    {
+        if (!isPieceSelected) return;
+
+        Vector2Int from = selectedPiece.position;
+        Vector2Int to = dot.position;
+
+        Move move = new Move(from.x, from.y, to.x, to.y);
+        Move originalMove = dot.move;
+        originalMove.pieceView = selectedPiece;
+
+        if (dot.isAttackMove)
+        {
+            PieceView targetPiece = pieceViews[to.x, to.y];
+
+            if (targetPiece != null)
+            {
+                appendCapturedPiece(targetPiece.pieceData);
+                Destroy(targetPiece.gameObject);
+                board.board[to.x, to.y] = null;
+                pieceViews[to.x, to.y] = null;
+                pieceOnBoard.Remove(targetPiece);
+            }
+            MovePiece(selectedPiece, move);
+            originalMove.isAttack = true;
+        }
+        else if (dot.isCastleMove)
+        {
+            MovePiece(selectedPiece, move);
+
+            if (move.toX == 2)
+            {
+                MovePiece(pieceViews[0, move.toY], new Move(0, move.toY, move.toX + 1, move.toY));
+            }
+
+            if (move.toX == 6)
+            {
+                MovePiece(pieceViews[7, move.toY], new Move(7, move.toY, move.toX - 1, move.toY));
+            }
+            originalMove.isCastle = true;
+        }
+        else if (dot.isEnPassant)
+        {
+            MovePiece(selectedPiece, move);
+            PieceView targetPiece = pieceViews[to.x, from.y];
+
+            if (targetPiece != null)
+            {
+                Destroy(targetPiece.gameObject);
+                board.board[to.x, from.y] = null;
+                pieceViews[to.x, from.y] = null;
+                pieceOnBoard.Remove(targetPiece);
+            }
+            originalMove.isAttack = true;
+        }
+        else
+        {
+            MovePiece(selectedPiece, move);
+        }
+
+        // Handle Promotion
+        if (selectedPiece.pieceData is Pawn && (to.y == 7 || to.y == 0))
+        {
+            pawnPromte = selectedPiece.pieceData;
+            promoteMove = originalMove;
+            promoteMenu.OpenPromoteCanvas(selectedPiece.pieceData.isWhite);
+            isPieceSelected = false;
+            clearDots();
+            return;
+        }
+
+        CompleteTurn(originalMove);
     }
 
 
@@ -1154,31 +1136,14 @@ public class GameManage : MonoBehaviour
     {
         Vector2 spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
         piece.transform.position = spawnPos;
-        // if (board.board[move.fromX, move.fromY] != null)
-        // {
-        //     board.board[move.fromX, move.fromY].hasMoved = true;
-        // }
 
         board.board[move.toX, move.toY] = piece.pieceData;
         board.board[move.fromX, move.fromY] = null;
 
         pieceViews[move.toX, move.toY] = piece;
-        pieceViews[piece.position.x, piece.position.y] = null;
+        pieceViews[move.fromX, move.fromY] = null;
         piece.position = new Vector2Int(move.toX, move.toY);
         piece.pieceData.hasMoved = true;
-
-
-        if (piece.pieceData is Pawn)
-        {
-            if ((piece.pieceData.isWhite && move.toY == 7) || (!piece.pieceData.isWhite && move.toY == 0))
-            {
-                selectedPiece.position = new Vector2Int(move.toX, move.toY);
-                promoteMenu.OpenPromoteCanvas(piece.pieceData.isWhite);
-
-                pawnPromte = piece.pieceData;
-                promoteMove = move;
-            }
-        }
     }
 
     public void callPromote(PieceType promoteTo)
@@ -1188,7 +1153,7 @@ public class GameManage : MonoBehaviour
 
     public void promotePiece(Piece piece, PieceType promoteTo, Move move)
     {
-        if (selectedPiece == null || piece.getType() != "p")
+        if (piece.getType() != "p")
         {
             Debug.LogError("Promotion error: No pawn selected for promotion.");
             return;
@@ -1197,7 +1162,13 @@ public class GameManage : MonoBehaviour
 
         int x = move.toX;
         int y = move.toY;
-        Destroy(pieceViews[move.toX, move.toY].gameObject);
+        PieceView oldView = pieceViews[x, y];
+        if (oldView != null)
+        {
+            pieceOnBoard.Remove(oldView);
+            Destroy(oldView.gameObject);
+        }
+
         Piece newPiece = null;
         switch (promoteTo)
         {
@@ -1218,8 +1189,11 @@ public class GameManage : MonoBehaviour
         GameObject obj = Instantiate(getPrefab(newPiece), new Vector2(changeXVector(x), changeYVector(y)), Quaternion.identity);
         PieceView view = obj.GetComponent<PieceView>();
         pieceViews[x, y] = view;
+        pieceOnBoard.Add(view);
         view.Init(newPiece, x, y);
-        moveHistory.Last().promoteTo = promoteTo;
+        
+        move.promoteTo = promoteTo;
+        CompleteTurn(move);
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
