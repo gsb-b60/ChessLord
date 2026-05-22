@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Principal;
+using System.Threading.Tasks;
+using ChessEngine;
 using NUnit.Framework;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -120,11 +122,29 @@ public class GameManage : MonoBehaviour
         Debug.Log("Selected side after change: " + GameData.selectedSide);
         reStartBoard();
     }
-    public void getEngineMove(string fen)
+    public async void getEngineMove(string fen)
     {
-        // You don't need a reference, just call the Instance
-        StockfishManager.Instance.SendCommand($"position fen {fen}");
-        StockfishManager.Instance.SendCommand("go depth 12");
+        if (ChessEngineManager.Instance == null)
+        {
+            Debug.LogError("ChessEngineManager.Instance is null!");
+            return;
+        }
+
+        await ChessEngineManager.Instance.EnsureConnectedAsync();
+
+        // Sync engine state
+        await ChessEngineManager.Instance.SetPosition(fen);
+
+        var response = await ChessEngineManager.Instance.GetEngineMove();
+        if (response.ok && !string.IsNullOrEmpty(response.move))
+        {
+            Debug.Log($"[ChessEngine] Best move found: {response.move}");
+            makeEngineMove(Move.convertUCIToMove(response.move));
+        }
+        else
+        {
+            Debug.LogError($"[ChessEngine] Failed to get engine move: {response.error}");
+        }
     }
     public void reStartBoard()
     {
@@ -146,6 +166,10 @@ public class GameManage : MonoBehaviour
         activeGameObjects.Clear();
         gameTurnWhite = true;
 
+        if (ChessEngineManager.Instance != null)
+        {
+            _ = ChessEngineManager.Instance.StartNewGame(GameData.selectedLevel > 0 ? GameData.selectedLevel : 5);
+        }
 
         board.board = new Piece[board.boardSize, board.boardSize];
         board.whitePieces = new System.Collections.Generic.List<Piece> {
@@ -187,6 +211,13 @@ public class GameManage : MonoBehaviour
     private void Awake()
     {
         instance = this;
+
+        if (ChessEngineManager.Instance == null)
+        {
+            GameObject engineObj = new GameObject("ChessEngineManager");
+            engineObj.AddComponent<ChessEngineManager>();
+        }
+
         reStartBoard();
 
     }
@@ -473,19 +504,19 @@ public class GameManage : MonoBehaviour
         }
         else
         {
-            if (moveHistory.Count >= 50)
-            {
-                bool isDraw = moveHistory
-                .TakeLast(50)
-                .All(m => !m.isAttack && !(m.pieceView.pieceData is Pawn));
-                if (isDraw)
-                {
-                    Debug.Log("Draw by 50-move rule!");
+            // if (moveHistory.Count >= 50)
+            // {
+            //     bool isDraw = moveHistory
+            //     .TakeLast(50)
+            //     .All(m => !m.isAttack && !(m.pieceView.pieceData is Pawn));
+            //     if (isDraw)
+            //     {
+            //         Debug.Log("Draw by 50-move rule!");
 
-                    moveHistory.Last().checkType = CheckType.Stalemate;
-                    EndingGame(CheckType.Stalemate);
-                }
-            }
+            //         moveHistory.Last().checkType = CheckType.Stalemate;
+            //         EndingGame(CheckType.Stalemate);
+            //     }
+            // }
             if (thisSidePieceCount == 1 || opponentPieceCount == 1)
             {
                 opponentPieceCount = pieceOnBoard.Count - thisSidePieceCount;

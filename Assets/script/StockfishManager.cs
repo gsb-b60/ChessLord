@@ -16,6 +16,7 @@ public class StockfishManager : MonoBehaviour
 
     public static StockfishManager Instance;
 
+    /*
     void Start()
     {
         // The string here MUST match the file name exactly (including the .exe)
@@ -57,6 +58,7 @@ public class StockfishManager : MonoBehaviour
             UnityEngine.Debug.LogError($"[Stockfish] Failed to start process: {ex.Message}");
         }
     }
+    */
 
     public void SendCommand(string command)
     {

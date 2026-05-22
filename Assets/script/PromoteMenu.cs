@@ -62,6 +62,7 @@ public class PromoteMenu : MonoBehaviour
     }
     private void createChoices(bool isWhite)
     {
+        promoteContainer.Clear();
         VisualElement queenImg = new VisualElement();
         queenImg.style.width = 40;
         queenImg.style.height = 40;

@@ -141,7 +141,14 @@ public class Move
         if (move.Length == 5)
         {
             char promotionPiece = move[4]; // 'q', 'r', 'b', or 'n'
-                                           // You might want to store this in your Move object!
+            engineMove.promoteTo = promotionPiece switch
+            {
+                'q' => PieceType.Queen,
+                'r' => PieceType.Rook,
+                'b' => PieceType.Bishop,
+                'n' => PieceType.Knight,
+                _ => PieceType.None
+            };
         }
         if (fromCoords == null || toCoords == null)
         {
