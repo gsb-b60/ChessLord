@@ -1,0 +1,37 @@
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+.vs/
+
+*.csproj
+*.unityproj
+*.sln
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+
+echo Logs/ >> .gitignore
+echo Library/ >> .gitignore
+echo Temp/ >> .gitignore
+echo Obj/ >> .gitignore
+echo Build/ >> .gitignore
+echo Builds/ >> .gitignore
+
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Uu]serSettings/
+
+*.apk
+*.aab
+
+.DS_Store
+Thumbs.db
+
+Assets/StreamingAssets/*.exe
+Assets/StreamingAssets/*
+!Assets/StreamingAssets/.gitkeep
