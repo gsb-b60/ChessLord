@@ -7,8 +7,8 @@ using NUnit.Framework;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
-
-
+using UnityEngine.SceneManagement;
+using TMPro;
 public enum PieceType
 {
     None,
@@ -23,14 +23,23 @@ public enum CheckType
     None,
     Check,
     Checkmate,
-    Stalemate
+    Stalemate,
+    Resign,        
+
 }
 public class GameManage : MonoBehaviour
 {
+    [Header("UI Chức Năng")]
+    public GameObject resignButton; // Nút đầu hàng
+
+    [Header("UI Cấp độ")]
+    public TMP_Text levelTextUI; 
+
     [Header("Âm thanh Bàn cờ")]
-public AudioSource boardAudio;     // Cái loa tổng
-public AudioClip moveSound;        // File nhạc đi cờ
-public AudioClip captureSound;     // File nhạc ăn quân (chuẩn bị sẵn luôn cho ngầu)
+public AudioSource boardAudio;     
+public AudioClip moveSound;       
+public AudioClip captureSound;     
+public AudioClip loseSound;
     //ui state variables
     private bool isPieceSelected = false;
     private PieceView selectedPiece;
@@ -114,12 +123,22 @@ public AudioClip captureSound;     // File nhạc ăn quân (chuẩn bị sẵn 
     public void EndingGame(CheckType result = CheckType.None, bool userWon = false)
     {
         Debug.Log("Ending game with result: " + result + ", userWon: " + userWon);
+        if (boardAudio != null)
+        {
+    
+            if ((result == CheckType.Resign || (result == CheckType.Checkmate && !userWon)) && loseSound != null)
+            {
+                boardAudio.PlayOneShot(loseSound);
+            }
+          
+        }
+
         gameMatchPanel.SetActive(true);
         gameMatchPanel.GetComponent<GameMatchScript>().SetResultText(result, userWon);
     }
     public void QuitGame()
     {
-        Application.Quit();
+        SceneManager.LoadScene(0);
     }
     public void PlayAgain()
     {
@@ -145,9 +164,7 @@ public AudioClip captureSound;     // File nhạc ăn quân (chuẩn bị sẵn 
         {
             Debug.Log($"[ChessEngine] Best move found: {response.move}");
             
-            // --- THÊM DELAY Ở ĐÂY ---
-            // Bắt máy tính đợi 0.7 giây (700 milliseconds) rồi mới thực hiện di chuyển trên bàn cờ.
-            // Ông có thể tự chỉnh số 700 này to hay nhỏ tùy ý thích nhé (1000 = 1 giây).
+            // them delay nho de cho engine di, neu khong co delay thi se gap loi khi engine di nhanh hon minh
             await Task.Delay(700);
 
             makeEngineMove(Move.convertUCIToMove(response.move));
@@ -157,7 +174,7 @@ public AudioClip captureSound;     // File nhạc ăn quân (chuẩn bị sẵn 
             Debug.LogError($"[ChessEngine] Failed to get engine move: {response.error}");
         }
     }
-    public void reStartBoard()
+    public void     reStartBoard()
     {
 
         isPlayerWhite = GameData.getPlayerSide();
@@ -240,9 +257,32 @@ public AudioClip captureSound;     // File nhạc ăn quân (chuẩn bị sẵn 
             board.board[i, 0] = board.whitePieces[i];
             board.board[i, 7] = board.blackPieces[i];
         }
+       
+
         displayBoard(board);
         ExportFEN();
+        if (levelTextUI != null)
+        {
+            if (GameData.selectedLevel > 0)
+            {
+                // Nếu là đánh với máy (Level > 0)
+                levelTextUI.text = "Computer level - " + GameData.selectedLevel;
+            }
+            else
+            {
+                // Nếu Level = 0 thì tức là chế độ 2 người chơi (PvP)
+                levelTextUI.text = "PvP (2 Người chơi)";
+            }
+        }
     }
+    public void onResignClicked()
+    {
+        Debug.Log("Người chơi hiện tại đã đầu hàng!");
+        
+        EndingGame(CheckType.Resign, false); 
+    }
+
+   
     private void Awake()
     {
         instance = this;

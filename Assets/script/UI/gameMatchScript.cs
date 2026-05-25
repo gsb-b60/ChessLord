@@ -1,13 +1,14 @@
 using TMPro;
 using UnityEngine;
 
-class GameMatchScript : MonoBehaviour
+public class GameMatchScript : MonoBehaviour
 {
     public TMP_Text resultText;
     public void SetResultText(CheckType result, bool userWon)
     {
         string resultString = "";
         Debug.Log("Setting result text with result: " + result + ", userWon: " + userWon);
+        
         switch (result)
         {
             case CheckType.Checkmate:
@@ -15,6 +16,9 @@ class GameMatchScript : MonoBehaviour
                 break;
             case CheckType.Stalemate:
                 resultString = "It's a Draw by Stalemate!";
+                break;
+            case CheckType.Resign:        // <--- ĐÃ THÊM CASE ĐẦU HÀNG
+                resultString = "You Resigned!";
                 break;
             case CheckType.None:
                 resultString = userWon ? "You Win!" : "You Lose!";
