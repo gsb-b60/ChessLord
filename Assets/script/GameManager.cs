@@ -4,6 +4,7 @@ using System.Security.Principal;
 using System.Threading.Tasks;
 using ChessEngine;
 using NUnit.Framework;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
@@ -99,6 +100,9 @@ public class GameManage : MonoBehaviour
     public ScrollRect moveListScroll;
     private GameObject currentListingMove;
 
+    public TMP_Text userTurn;
+    public TMP_Text computerTurn;
+
 
 
 
@@ -158,7 +162,7 @@ public class GameManage : MonoBehaviour
         activeGameObjects.Clear();
         activeMoveHighlight.ForEach(dot => Destroy(dot));
         activeMoveHighlight.Clear();
-        
+
         // Clear captured pieces UI and data
         capturedWhitePieces.Clear();
         capturedBlackPieces.Clear();
@@ -181,7 +185,7 @@ public class GameManage : MonoBehaviour
         board = new Board();
         pieceViews = new PieceView[board.boardSize, board.boardSize];
         Debug.Log(pieceViews != null ? "pieceViews initialized successfully" : "Failed to initialize pieceViews");
-        
+
         moveHistory.Clear();
         pieceOnBoard.Clear();
         isPieceSelected = false;
@@ -231,6 +235,13 @@ public class GameManage : MonoBehaviour
         }
         displayBoard(board);
         ExportFEN();
+        UpdateTurnUI();
+    }
+    private void UpdateTurnUI()
+    {
+        bool isUserTurn = (gameTurnWhite == isPlayerWhite);
+        if (userTurn != null) userTurn.gameObject.SetActive(isUserTurn);
+        if (computerTurn != null) computerTurn.gameObject.SetActive(!isUserTurn);
     }
     private void Awake()
     {
@@ -904,9 +915,9 @@ public class GameManage : MonoBehaviour
             currentListingMove = null;
             int orderOfMove = moveHistory.Count / 2 + 1;
             string textMove = moveHistory.Last().ToString();
-            
+
             GameObject prefabToUse = (moveHistory.Count / 2) % 2 == 0 ? moveEvenPrefab : moveOddPrefab;
-            
+
             if (prefabToUse != null)
             {
                 currentListingMove = Instantiate(prefabToUse, listMovePanel.transform);
@@ -943,6 +954,7 @@ public class GameManage : MonoBehaviour
         displayMovedPiece(moveHistory.Last());
         displayListMove();
         ExportFEN();
+        UpdateTurnUI();
     }
 
     public void onDotClicked(SuggestDot dot)
@@ -1216,7 +1228,7 @@ public class GameManage : MonoBehaviour
         pieceViews[x, y] = view;
         pieceOnBoard.Add(view);
         view.Init(newPiece, x, y);
-        
+
         move.promoteTo = promoteTo;
         CompleteTurn(move);
     }
