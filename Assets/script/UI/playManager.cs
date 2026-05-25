@@ -7,39 +7,91 @@ public class playManager : MonoBehaviour
     public ChooseLevelState level;
     public chooseSideState side;
     
-    // Tạo một ô để ông nhét cái Loa vào
+    [Header("UI Cài đặt")]
+    public GameObject modeSelectionGroup; // Nhóm 2 nút PvP/Bot
+    public GameObject levelSelectionPanel; // Cái cụm chooseLevel
+    public GameObject playButton; // Nút Play Now
+    
+    // --- BIẾN MỚI: ĐỂ ĐIỀU KHIỂN NÚT QUAY LẠI ---
+    public GameObject backButton; 
+    
     public AudioSource myAudio; 
-   
-    void Start() { }
-    void Update() { }
+    public static bool isPvPMode = false; 
+
+    void Start() 
+    {
+        // Mới vào game: Chỉ hiện 2 nút chọn chế độ
+        if (modeSelectionGroup != null) modeSelectionGroup.SetActive(true);
+        
+        // Ẩn sạch mấy thứ còn lại cho gọn màn hình
+        if (playButton != null) playButton.SetActive(false);
+        if (levelSelectionPanel != null) levelSelectionPanel.SetActive(false);
+        if (backButton != null) backButton.SetActive(false); // Mới vào thì ẩn nút quay lại đi
+    }
+
+    public void ChoosePvPMode()
+    {
+        isPvPMode = true; 
+        if (modeSelectionGroup != null) modeSelectionGroup.SetActive(false);
+        if (levelSelectionPanel != null) levelSelectionPanel.SetActive(false); 
+        if (playButton != null) playButton.SetActive(true); 
+        
+        if (backButton != null) backButton.SetActive(true); // Hiện nút quay lại để người ta đổi ý
+        Debug.Log("Đã chọn PvP");
+    }
+
+    public void ChooseBotMode()
+    {
+        isPvPMode = false; 
+        if (modeSelectionGroup != null) modeSelectionGroup.SetActive(false);
+        if (levelSelectionPanel != null) levelSelectionPanel.SetActive(true); 
+        if (playButton != null) playButton.SetActive(true); 
+        
+        if (backButton != null) backButton.SetActive(true); // Hiện nút quay lại để người ta đổi ý
+        Debug.Log("Đã chọn Bot");
+    }
+
+    // ========================================================
+    // --- HÀM MỚI: QUAY LẠI MÀN HÌNH CHỌN CHẾ ĐỘ ---
+    // ========================================================
+    public void BackToModeSelection()
+    {
+        if (modeSelectionGroup != null) modeSelectionGroup.SetActive(true); // Hiện lại 2 nút PvP/Bot
+        
+        // Ẩn hết mấy cái giao diện chọn sau đi
+        if (levelSelectionPanel != null) levelSelectionPanel.SetActive(false);
+        if (playButton != null) playButton.SetActive(false);
+        if (backButton != null) backButton.SetActive(false); // Ẩn chính nó luôn
+        
+        Debug.Log("Đã quay xe về màn hình chọn chế độ chơi gốc!");
+    }
 
     public void playEvent()
     {
-        Debug.Log("play with level " + level.selectedLevel + " and side " + side.selectedSide);
         GameData.selectedLevel = level.selectedLevel;
         GameData.selectedSide = side.selectedSide;
-
-        // Bắt đầu quy trình: Kêu beep -> Đợi -> Chuyển Scene
+        if (isPvPMode)
+        {
+            // Tìm cổ thằng trùm cuối lúc nó đang trốn ở Menu
+            GameObject trumCuoi = GameObject.Find("ChessEngineManager");
+            if (trumCuoi != null)
+            {
+                Destroy(trumCuoi); // Xé vé, đuổi cổ nó khỏi game
+                Debug.Log(">>> PVP MODE: Đã tiêu diệt ChessEngineManager từ trứng nước! <<<");
+            }
+        }
         StartCoroutine(PlaySoundAndLoadScene());
     }
 
     IEnumerator PlaySoundAndLoadScene()
     {
-        // 1. Nếu có gắn Loa thì bật Loa lên
         if (myAudio != null)
         {
             myAudio.Play();
-            
-            // 2. Tự động lấy độ dài của file âm thanh (ví dụ 0.3s) và bắt Unity đứng đợi đúng chừng đó thời gian
             yield return new WaitForSeconds(myAudio.clip.length);
         }
-        else
-        {
-            // Dự phòng lỡ ông quên gắn loa thì nó vẫn đợi nửa giây rồi chuyển
-            yield return new WaitForSeconds(0.5f); 
-        }
+        else yield return new WaitForSeconds(0.5f); 
 
-        // 3. Đợi tiếng kêu xong xuôi hết rồi mới load Scene mới
         SceneManager.LoadScene(1);
     }
 }

@@ -44,7 +44,7 @@ namespace ChessEngine
                 {
                     return await _initTcs.Task;
                 }
-                return false; // Should not happen with _isInitializing check
+                return false; 
             }
 
             _isInitializing = true;
@@ -54,7 +54,6 @@ namespace ChessEngine
             {
                 await _service.InitializeAsync();
                 
-                // Initial new game command to set level
                 var request = new EngineRequest("new_game") { level = defaultLevel };
                 await _service.SendCommandAsync(request);
                 
@@ -74,8 +73,18 @@ namespace ChessEngine
             }
         }
 
+        // ==========================================================
+        // --- CÁC CỔNG GIAO TIẾP ĐÃ ĐƯỢC THIẾT QUÂN LUẬT CHO PVP ---
+        // ==========================================================
+
         public async Task<EngineResponse> StartNewGame(int level)
         {
+            if (playManager.isPvPMode) 
+            {
+                UnityEngine.Debug.LogWarning(">>> [PvP MODE] Đã chặn Bot tạo ván mới!");
+                return null; 
+            }
+
             await EnsureConnectedAsync();
             var request = new EngineRequest("new_game") { level = level };
             return await _service.SendCommandAsync(request);
@@ -83,6 +92,8 @@ namespace ChessEngine
 
         public async Task<EngineResponse> PlayerMove(string moveUci)
         {
+            if (playManager.isPvPMode) return null;
+
             await EnsureConnectedAsync();
             var request = new EngineRequest("player_move") { move = moveUci };
             return await _service.SendCommandAsync(request);
@@ -90,6 +101,12 @@ namespace ChessEngine
 
         public async Task<EngineResponse> GetEngineMove()
         {
+            if (playManager.isPvPMode)
+            {
+                UnityEngine.Debug.LogWarning(">>> [PvP MODE] Cấm Bot can thiệp nước đi!");
+                return null; 
+            }
+
             await EnsureConnectedAsync();
             var request = new EngineRequest("engine_move");
             return await _service.SendCommandAsync(request);
@@ -97,6 +114,8 @@ namespace ChessEngine
 
         public async Task<EngineResponse> SetPosition(string fen)
         {
+            if (playManager.isPvPMode) return null; 
+
             await EnsureConnectedAsync();
             var request = new EngineRequest("set_position") { fen = fen };
             return await _service.SendCommandAsync(request);
@@ -104,6 +123,8 @@ namespace ChessEngine
 
         public async Task<EngineResponse> GetBoard()
         {
+            if (playManager.isPvPMode) return null;
+
             await EnsureConnectedAsync();
             var request = new EngineRequest("get_board");
             return await _service.SendCommandAsync(request);
