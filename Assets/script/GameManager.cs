@@ -35,6 +35,11 @@ public class GameManage : MonoBehaviour
     [Header("UI Cấp độ")]
     public TMP_Text levelTextUI; 
 
+    [Header("Vị trí Bàn Cờ")]
+    [Tooltip("Chỉnh khi bàn cờ bị lệch. Tăng Y để dọi lên, tăng X để dọi phải.")]
+    public float boardOffsetX = 0f;
+    public float boardOffsetY = 0f;
+
     [Header("Âm thanh Bàn cờ")]
 public AudioSource boardAudio;     
 public AudioClip moveSound;       
@@ -1373,29 +1378,15 @@ public AudioClip loseSound;
         }
         return null;
     }
-    private int changeXVector(int x)
+    private float changeXVector(int x)
     {
-        if (isPlayerWhite)
-        {
-            return x - 4;
-        }
-        else
-        {
-            return 7 - x - 4;
-        }
-
+        float baseX = isPlayerWhite ? x - 4 : 7 - x - 4;
+        return baseX + boardOffsetX;
     }
-    private int changeYVector(int y)
+    private float changeYVector(int y)
     {
-        if (isPlayerWhite)
-        {
-            return y - 3;
-        }
-        else
-        {
-            return 7 - y - 3;
-        }
-
+        float baseY = isPlayerWhite ? y - 3 : 7 - y - 3;
+        return baseY + boardOffsetY;
     }
 
     // Update is called once per frame
