@@ -406,6 +406,7 @@ public AudioClip loseSound;
             appendCapturedPiece(targetPiece.pieceData);
             Destroy(targetPiece.gameObject);
             board.board[move.toX, move.toY] = null;
+            pieceViews[move.toX, move.toY] = null;  // FIX: xóa stale reference tránh mất quân
             pieceOnBoard.Remove(targetPiece);
 
             move.isAttack = true;
@@ -428,13 +429,14 @@ public AudioClip loseSound;
 
 
         // 3. Update Backend Logic (Data Board)
-        board.board[move.fromX, move.fromY].hasMoved = true;
+        // FIX: cập nhật fromX trước, sau đó mới ghi toX để tránh ghi đè sai
+        piece.pieceData.hasMoved = true;
+        board.board[move.fromX, move.fromY] = null;
         board.board[move.toX, move.toY] = piece.pieceData;
-        board.board[move.fromX, move.fromY] = null; // Cleaned up to use move.from
 
         // 4. Update View Tracking (UI/Reference Board)
-        pieceViews[move.toX, move.toY] = piece;
         pieceViews[move.fromX, move.fromY] = null;
+        pieceViews[move.toX, move.toY] = piece;
 
         // 5. Update Piece Internal State
         piece.position = new Vector2Int(move.toX, move.toY);
