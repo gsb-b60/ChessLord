@@ -35,10 +35,7 @@ public class GameManage : MonoBehaviour
     [Header("UI Cấp độ")]
     public TMP_Text levelTextUI; 
 
-    [Header("Vị trí Bàn Cờ")]
-    [Tooltip("Kéo GameObject của sprite bàn cờ vào đây. Quân sẽ tự căn theo vị trí bàn cờ.")]
-    public Transform boardCenter;   // Transform của bàn cờ (center)
-    public float squareSize = 1f;   // Kích thước 1 ô cờ theo world units
+
 
     [Header("Âm thanh Bàn cờ")]
 public AudioSource boardAudio;     
@@ -122,8 +119,12 @@ public AudioClip loseSound;
     public Image userAvatar;      // Avatar của người chơi
     public Image computerAvatar;  // Avatar của máy
 
+    // Text cạnh avatar - kéo TMP_Text vào đây
+    public TMP_Text userLabel;       // Text cạnh avatar user ("Your Turn")
+    public TMP_Text computerLabel;   // Text cạnh avatar bot ("Computer Lv X")
+
     // Màu khi đến lượt (xanh lá sáng) và khi chờ (trắng mờ)
-    private readonly Color activeColor  = new Color(0.2f, 0.9f, 0.3f, 1f);   // xanh lá
+    private readonly Color activeColor   = new Color(0.2f, 0.9f, 0.3f, 1f);   // xanh lá
     private readonly Color inactiveColor = new Color(1f, 1f, 1f, 0.35f);      // trắng mờ
 
 
@@ -145,8 +146,11 @@ public AudioClip loseSound;
             }
         }
 
-        // Delay 2 giây để người chơi xem được thế cờ chiếu bí trước khi hiện bảng kết quả
-        await Task.Delay(2000);
+        // Chỉ delay khi chiếu bí/hòa cờ để người chơi xem thế cờ, đầu hàng thì hiện liền
+        if (result != CheckType.Resign)
+        {
+            await Task.Delay(2000);
+        }
 
         gameMatchPanel.SetActive(true);
         int botLevel = GameData.selectedLevel; // 0 = PvP, > 0 = đánh với máy
@@ -296,11 +300,24 @@ public AudioClip loseSound;
     {
         bool isUserTurn = (gameTurnWhite == isPlayerWhite);
 
+        // Avatar highlight
         if (userAvatar != null)
             userAvatar.color = isUserTurn ? activeColor : inactiveColor;
-
         if (computerAvatar != null)
             computerAvatar.color = isUserTurn ? inactiveColor : activeColor;
+
+        // Text labels
+        if (userLabel != null)
+        {
+            userLabel.text = "Your Turn";
+            userLabel.color = isUserTurn ? activeColor : inactiveColor;
+        }
+        if (computerLabel != null)
+        {
+            int lvl = GameData.selectedLevel;
+            computerLabel.text = lvl > 0 ? $"Computer Lv {lvl}" : "Player 2";
+            computerLabel.color = isUserTurn ? inactiveColor : activeColor;
+        }
     }
     public void onResignClicked()
     {
@@ -1378,23 +1395,19 @@ public AudioClip loseSound;
         }
         return null;
     }
-    // Tính toạ độ World của quân cờ dựa theo vị trí thực của bàn cờ
-    // Bàn cờ 8x8, tâm bàn cờ là giữa ô (3,3) và (4,4)
-    // offset từ tâm: cột 0 = -3.5, cột 7 = +3.5
-    private float changeXVector(int x)
+    private int changeXVector(int x)
     {
-        float col = isPlayerWhite ? x : 7 - x;
-        if (boardCenter != null)
-            return boardCenter.position.x + (col - 3.5f) * squareSize;
-        // fallback: giả sử tâm bàn = (-0.5, 0.5) khi không gán boardCenter
-        return (isPlayerWhite ? x - 4 : 7 - x - 4) + 0.5f;
+        if (isPlayerWhite)
+            return x - 4;
+        else
+            return 7 - x - 4;
     }
-    private float changeYVector(int y)
+    private int changeYVector(int y)
     {
-        float row = isPlayerWhite ? y : 7 - y;
-        if (boardCenter != null)
-            return boardCenter.position.y + (row - 3.5f) * squareSize;
-        return (isPlayerWhite ? y - 3 : 7 - y - 3) + 0.5f;
+        if (isPlayerWhite)
+            return y - 3;
+        else
+            return 7 - y - 3;
     }
 
     // Update is called once per frame
