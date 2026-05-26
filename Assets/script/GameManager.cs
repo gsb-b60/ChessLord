@@ -166,7 +166,10 @@ public AudioClip loseSound;
         if (response.ok && !string.IsNullOrEmpty(response.move))
         {
             Debug.Log($"[ChessEngine] Best move found: {response.move}");
-            
+
+            // Delay nhỏ để bot không đánh ngay lập tức, tạo cảm giác tự nhiên hơn
+            await Task.Delay(700);
+
             makeEngineMove(Move.convertUCIToMove(response.move));
         }
         else
