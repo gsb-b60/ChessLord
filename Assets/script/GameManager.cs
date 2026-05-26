@@ -113,6 +113,9 @@ public AudioClip loseSound;
     public ScrollRect moveListScroll;
     private GameObject currentListingMove;
 
+    public TMP_Text userTurn;
+    public TMP_Text computerTurn;
+
 
 
 
@@ -164,9 +167,6 @@ public AudioClip loseSound;
         {
             Debug.Log($"[ChessEngine] Best move found: {response.move}");
             
-            // them delay nho de cho engine di, neu khong co delay thi se gap loi khi engine di nhanh hon minh
-            await Task.Delay(700);
-
             makeEngineMove(Move.convertUCIToMove(response.move));
         }
         else
@@ -274,6 +274,13 @@ public AudioClip loseSound;
                 levelTextUI.text = "PvP (2 Người chơi)";
             }
         }
+        UpdateTurnUI();
+    }
+    private void UpdateTurnUI()
+    {
+        bool isUserTurn = (gameTurnWhite == isPlayerWhite);
+        if (userTurn != null) userTurn.gameObject.SetActive(isUserTurn);
+        if (computerTurn != null) computerTurn.gameObject.SetActive(!isUserTurn);
     }
     public void onResignClicked()
     {
@@ -988,6 +995,7 @@ public AudioClip loseSound;
         displayMovedPiece(moveHistory.Last());
         displayListMove();
         ExportFEN();
+        UpdateTurnUI();
     }
 
     public void onDotClicked(SuggestDot dot)

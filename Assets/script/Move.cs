@@ -35,6 +35,9 @@ public class Move
     }
     public static string GetCharChessPiece(PieceView piece)
     {
+        if (piece == null || piece.pieceData == null)
+            return "";
+
         return piece.pieceData switch
         {
             Pawn => "",
@@ -48,11 +51,13 @@ public class Move
     }
     public string getAttackChar()
     {
-        if (pieceView.pieceData is Pawn && isAttack)
+        if (!isAttack) return "";
+
+        if (pieceView != null && pieceView.pieceData is Pawn)
         {
             return Convert(fromX, fromY)[0].ToString() + "x";
         }
-        return isAttack ? "x" : "";
+        return "x";
     }
     public string isCheckChar()
     {
@@ -77,23 +82,35 @@ public class Move
     }
     public override string ToString()
     {
-        if (!isEngineMove)
+        if (isCastle)
         {
-            if (isCastle)
-            {
-                if (toX == 6)
-                    return "O-O";
-                else
-                    return "O-O-O";
-            }
+            if (toX == 6)
+                return "O-O";
+            else
+                return "O-O-O";
+        }
+
+        if (pieceView != null)
+        {
             return $"{GetCharChessPiece(pieceView)}{getAttackChar()}{Convert(toX, toY)}{ConvertPromotion()}{isCheckChar()}";
         }
         else
         {
-            return Convert(toX, toY);
+            // For engine moves before they are enriched with piece information
+            string uci = $"{Convert(fromX, fromY)}{Convert(toX, toY)}";
+            if (promoteTo != PieceType.None)
+            {
+                uci += promoteTo switch
+                {
+                    PieceType.Queen => "q",
+                    PieceType.Rook => "r",
+                    PieceType.Bishop => "b",
+                    PieceType.Knight => "n",
+                    _ => ""
+                };
+            }
+            return uci + isCheckChar();
         }
-
-
     }
     public string enPassantFen()
     {
