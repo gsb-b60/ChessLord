@@ -17,6 +17,8 @@ public class Move
     public CheckType checkType = CheckType.None;
 
     public PieceView pieceView;
+    public Piece capturedPiece;   // Lưu quân bị ăn để có thể undo
+    public bool hadMovedBefore;   // Lưu trạng thái hasMoved trước khi đi (để undo tốt đi 2 ô)
 
     public bool isEngineMove;
     public Move(int fx, int fy, int tx, int ty)

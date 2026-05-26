@@ -31,6 +31,8 @@ public class GameManage : MonoBehaviour
 {
     [Header("UI Chức Năng")]
     public GameObject resignButton; // Nút đầu hàng
+    public GameObject undoButton;   // Nút quay lại nước đi
+    public GameObject hintButton;   // Nút gợi ý nước đi
 
     [Header("UI Cấp độ")]
     public TMP_Text levelTextUI; 
@@ -95,6 +97,7 @@ public AudioClip loseSound;
     public GameObject moveEvenPrefab;
 
     public GameObject lastMovePrefab;
+    public GameObject hintHighlightPrefab; // Prefab highlight gợi ý (màu xanh dương)
 
     public GameObject gameMatchPanel;
 
@@ -132,6 +135,7 @@ public AudioClip loseSound;
 
     List<GameObject> activeGameObjects = new List<GameObject>();
     List<GameObject> activeMoveHighlight = new List<GameObject>();
+    List<GameObject> activeHintHighlight = new List<GameObject>();
 
     bool isPlayerWhite;
     public async void EndingGame(CheckType result = CheckType.None, bool userWon = false)
@@ -194,7 +198,7 @@ public AudioClip loseSound;
             Debug.LogError($"[ChessEngine] Failed to get engine move: {response.error}");
         }
     }
-    public void     reStartBoard()
+    public async void reStartBoard()
     {
 
         isPlayerWhite = GameData.getPlayerSide();
@@ -206,6 +210,7 @@ public AudioClip loseSound;
         activeGameObjects.Clear();
         activeMoveHighlight.ForEach(dot => Destroy(dot));
         activeMoveHighlight.Clear();
+        clearHintHighlight();
         
         // Clear captured pieces UI and data
         capturedWhitePieces.Clear();
@@ -239,7 +244,7 @@ public AudioClip loseSound;
 
         if (ChessEngineManager.Instance != null)
         {
-            _ = ChessEngineManager.Instance.StartNewGame(GameData.selectedLevel > 0 ? GameData.selectedLevel : 5);
+            await ChessEngineManager.Instance.StartNewGame(GameData.selectedLevel > 0 ? GameData.selectedLevel : 5);
         }
 
         board.board = new Piece[board.boardSize, board.boardSize];
@@ -326,6 +331,247 @@ public AudioClip loseSound;
         EndingGame(CheckType.Resign, false); 
     }
 
+    // ======================== UNDO ========================
+    public void onUndoClicked()
+    {
+        if (moveHistory.Count == 0) return;
+
+        // Xóa hint highlight nếu có
+        clearHintHighlight();
+
+        // Nếu đánh với bot và có đủ 2 nước (địch + mình) thì undo 2 lần
+        bool isVsBot = GameData.selectedLevel > 0;
+        int undoCount = (isVsBot && moveHistory.Count >= 2) ? 2 : 1;
+
+        for (int i = 0; i < undoCount; i++)
+        {
+            if (moveHistory.Count == 0) break;
+            UndoLastMove();
+        }
+
+        // Cập nhật lại UI
+        displayKingInCheck();
+        if (moveHistory.Count > 0)
+            displayMovedPiece(moveHistory.Last());
+        else
+        {
+            activeMoveHighlight.ForEach(h => Destroy(h));
+            activeMoveHighlight.Clear();
+        }
+        ExportFEN();
+        UpdateTurnUI();
+
+        // Sync lại vị trí với engine
+        if (ChessEngineManager.Instance != null)
+        {
+            string fen = ExportFENString();
+            _ = ChessEngineManager.Instance.SetPosition(fen);
+        }
+
+        Debug.Log($"Undo xong! Còn {moveHistory.Count} nước trong lịch sử.");
+    }
+
+    private void UndoLastMove()
+    {
+        Move lastMove = moveHistory.Last();
+        moveHistory.RemoveAt(moveHistory.Count - 1);
+
+        PieceView movedPiece = lastMove.pieceView;
+
+        // 1. Di chuyển quân về vị trí cũ
+        if (movedPiece != null && movedPiece.gameObject != null)
+        {
+            Vector2 oldPos = new Vector2(changeXVector(lastMove.fromX), changeYVector(lastMove.fromY));
+            movedPiece.transform.position = oldPos;
+            movedPiece.position = new Vector2Int(lastMove.fromX, lastMove.fromY);
+
+            // Khôi phục trạng thái hasMoved (quan trọng cho tốt đi 2 ô)
+            movedPiece.pieceData.hasMoved = lastMove.hadMovedBefore;
+
+            // Cập nhật board data
+            board.board[lastMove.fromX, lastMove.fromY] = movedPiece.pieceData;
+            board.board[lastMove.toX, lastMove.toY] = null;
+
+            pieceViews[lastMove.fromX, lastMove.fromY] = movedPiece;
+            pieceViews[lastMove.toX, lastMove.toY] = null;
+        }
+
+        // 2. Phục hồi quân bị ăn (nếu có)
+        if (lastMove.isAttack && lastMove.capturedPiece != null)
+        {
+            // Tạo lại quân bị ăn
+            Vector2 capturedPos = new Vector2(changeXVector(lastMove.toX), changeYVector(lastMove.toY));
+            GameObject obj = Instantiate(getPrefab(lastMove.capturedPiece), capturedPos, Quaternion.identity, piecesParent.transform);
+            PieceView view = obj.GetComponent<PieceView>();
+            view.pieceData = lastMove.capturedPiece;
+            view.position = new Vector2Int(lastMove.toX, lastMove.toY);
+            view.id = obj.GetInstanceID(); // Gán ID duy nhất
+
+            pieceViews[lastMove.toX, lastMove.toY] = view;
+            board.board[lastMove.toX, lastMove.toY] = lastMove.capturedPiece;
+            pieceOnBoard.Add(view);
+            activeGameObjects.Add(obj); // Thêm vào danh sách để restart dọn dẹp
+
+            // Xóa khỏi danh sách quân bị bắt
+            if (lastMove.capturedPiece.isWhite)
+                capturedWhitePieces.Remove(lastMove.capturedPiece);
+            else
+                capturedBlackPieces.Remove(lastMove.capturedPiece);
+        }
+
+        // 3. Đảo lượt
+        gameTurnWhite = !gameTurnWhite;
+
+        // 4. Rebuild UI
+        RebuildMoveListUI();
+        RebuildCapturedPiecesUI();
+    }
+
+    // Xóa + vẽ lại UI quân bị bắt từ danh sách
+    private void RebuildCapturedPiecesUI()
+    {
+        // Xóa UI cũ
+        foreach (Transform child in userCaptureContainer.transform) Destroy(child.gameObject);
+        foreach (Transform child in computerCaptureContainer.transform) Destroy(child.gameObject);
+
+        // Vẽ lại từ danh sách
+        foreach (Piece p in capturedWhitePieces)
+        {
+            Transform container = GetTargetContainer(p);
+            CreateCapturedUI(p, container);
+        }
+        foreach (Piece p in capturedBlackPieces)
+        {
+            Transform container = GetTargetContainer(p);
+            CreateCapturedUI(p, container);
+        }
+    }
+
+    private void RebuildMoveListUI()
+    {
+        if (listMovePanel == null) return;
+        foreach (Transform child in listMovePanel.transform)
+        {
+            if (child.gameObject != moveEvenPrefab && child.gameObject != moveOddPrefab)
+                Destroy(child.gameObject);
+        }
+        currentListingMove = null;
+
+        // Replay hiển thị từ đầu
+        for (int i = 0; i < moveHistory.Count; i++)
+        {
+            bool isWhiteMove = (i % 2 == 0);
+            if (isWhiteMove)
+            {
+                int orderOfMove = i / 2 + 1;
+                GameObject prefabToUse = (i / 2) % 2 == 0 ? moveEvenPrefab : moveOddPrefab;
+                if (prefabToUse != null)
+                {
+                    currentListingMove = Instantiate(prefabToUse, listMovePanel.transform);
+                    currentListingMove.SetActive(true);
+                    currentListingMove.GetComponent<ListMoveScript>().displayListMove(orderOfMove, moveHistory[i].ToString());
+                }
+            }
+            else
+            {
+                if (currentListingMove != null)
+                    currentListingMove.GetComponent<ListMoveScript>().displayBlackMove(moveHistory[i].ToString());
+            }
+        }
+    }
+
+    // ======================== HINT ========================
+    private PieceView hintedPiece = null; // Quân đang được gợi ý (để restore màu)
+    private int hintToX = -1, hintToY = -1; // Ô đích gợi ý
+
+    public async void onHintClicked()
+    {
+        Debug.Log("[Hint] Nút Hint được bấm!");
+
+        // Chỉ gợi ý khi đến lượt người chơi
+        bool isUserTurn = (gameTurnWhite == isPlayerWhite);
+        if (!isUserTurn)
+        {
+            Debug.LogWarning("[Hint] Không phải lượt người chơi!");
+            return;
+        }
+
+        // Reset hint cũ
+        clearHintHighlight();
+
+        try
+        {
+            // Gọi engine lấy nước đi tốt nhất
+            string fen = ExportFENString();
+            Debug.Log($"[Hint] FEN: {fen}");
+
+            await ChessEngineManager.Instance.EnsureConnectedAsync();
+            await ChessEngineManager.Instance.SetPosition(fen);
+            var response = await ChessEngineManager.Instance.GetEngineMove();
+
+            if (response == null || !response.ok || string.IsNullOrEmpty(response.move))
+            {
+                Debug.LogWarning("[Hint] Engine không trả lời, thử fallback...");
+                return;
+            }
+
+            Move hintMove = Move.convertUCIToMove(response.move);
+            Debug.Log($"[Hint] Gợi ý: {response.move} → ({hintMove.fromX},{hintMove.fromY}) -> ({hintMove.toX},{hintMove.toY})");
+
+            // 1. Tìm quân ở vị trí from
+            PieceView hintPiece = pieceViews[hintMove.fromX, hintMove.fromY];
+            if (hintPiece == null)
+            {
+                Debug.LogWarning("[Hint] Không tìm thấy quân tại vị trí gợi ý!");
+                return;
+            }
+
+            // 2. Đánh dấu quân được gợi ý (chỉ lưu reference để restore)
+            hintedPiece = hintPiece;
+
+            // 3. Highlight ô dưới quân cần đi (dùng attack_high_light để chắc chắn hiện)
+            Vector2 fromPos = new Vector2(changeXVector(hintMove.fromX), changeYVector(hintMove.fromY));
+            GameObject fromHL = Instantiate(attack_high_light, fromPos, Quaternion.identity);
+            // Xóa hết collider để click xuyên qua
+            foreach (var col in fromHL.GetComponents<Collider2D>()) Destroy(col);
+            foreach (var col in fromHL.GetComponentsInChildren<Collider2D>()) Destroy(col);
+            activeHintHighlight.Add(fromHL);
+
+            // 4. Hiện ô đích gợi ý bằng dot
+            hintToX = hintMove.toX;
+            hintToY = hintMove.toY;
+
+            bool isTargetAttack = (pieceViews[hintMove.toX, hintMove.toY] != null);
+            Vector2 toPos = new Vector2(changeXVector(hintMove.toX), changeYVector(hintMove.toY));
+            GameObject dotPrefab = isTargetAttack ? attack_high_light : dot;
+            GameObject toHL = Instantiate(dotPrefab, toPos, Quaternion.identity);
+            foreach (var col in toHL.GetComponents<Collider2D>()) Destroy(col);
+            foreach (var col in toHL.GetComponentsInChildren<Collider2D>()) Destroy(col);
+            activeHintHighlight.Add(toHL);
+
+            Debug.Log("[Hint] Đã hiển thị gợi ý thành công!");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[Hint] Lỗi: {e.Message}\n{e.StackTrace}");
+        }
+    }
+
+    private void clearHintHighlight()
+    {
+        // Restore màu quân được gợi ý về trắng
+        if (hintedPiece != null && hintedPiece.gameObject != null)
+        {
+            SpriteRenderer sr = hintedPiece.GetComponent<SpriteRenderer>();
+            if (sr != null) sr.color = Color.white;
+            hintedPiece = null;
+        }
+        hintToX = -1;
+        hintToY = -1;
+        activeHintHighlight.ForEach(h => Destroy(h));
+        activeHintHighlight.Clear();
+    }
+
    
     private void Awake()
     {
@@ -347,6 +593,7 @@ public AudioClip loseSound;
     }
     public void onPieceClicked(PieceView piece)
     {
+        clearHintHighlight();
         //promoteMenu.OpenPromoteCanvas(true);
         if (isPieceSelected)
         {
@@ -437,6 +684,7 @@ public AudioClip loseSound;
         if (targetPiece != null)
         {
             Debug.Log("Attacking piece at (" + move.toX + "," + move.toY + "): " + targetPiece.pieceData.GetType().Name);
+            move.capturedPiece = targetPiece.pieceData; // Lưu lại để undo
             appendCapturedPiece(targetPiece.pieceData);
             Destroy(targetPiece.gameObject);
             board.board[move.toX, move.toY] = null;
@@ -464,6 +712,7 @@ public AudioClip loseSound;
 
         // 3. Update Backend Logic (Data Board)
         // FIX: cập nhật fromX trước, sau đó mới ghi toX để tránh ghi đè sai
+        move.hadMovedBefore = piece.pieceData.hasMoved; // Lưu trạng thái trước khi đi
         piece.pieceData.hasMoved = true;
         board.board[move.fromX, move.fromY] = null;
         board.board[move.toX, move.toY] = piece.pieceData;
@@ -1025,6 +1274,7 @@ public AudioClip loseSound;
         moveHistory.Add(move);
         isPieceSelected = false;
         clearDots();
+        clearHintHighlight();
 
         gameTurnWhite = !gameTurnWhite;
         moveHistory.Last().checkType = !checkKingSafety(gameTurnWhite, board) ? CheckType.Check : CheckType.None;
@@ -1054,6 +1304,7 @@ public AudioClip loseSound;
 
             if (targetPiece != null)
             {
+                originalMove.capturedPiece = targetPiece.pieceData; // Lưu lại để undo
                 appendCapturedPiece(targetPiece.pieceData);
                 Destroy(targetPiece.gameObject);
                 board.board[to.x, to.y] = null;
@@ -1227,6 +1478,55 @@ public AudioClip loseSound;
         }
 
     }
+
+    // Trả về FEN string mà không gọi engine (dùng cho hint/undo)
+    private string ExportFENString()
+    {
+        string boardPosition = "";
+        for (int i = 0; i < board.boardSize; i++)
+        {
+            int emptyCount = 0;
+            for (int j = 0; j < board.boardSize; j++)
+            {
+                Piece piece = board.board[j, board.boardSize - 1 - i];
+                if (piece == null)
+                    emptyCount++;
+                else
+                {
+                    if (emptyCount > 0) { boardPosition += emptyCount.ToString(); emptyCount = 0; }
+                    boardPosition += GameData.getFenChar(piece);
+                }
+            }
+            if (emptyCount > 0) boardPosition += emptyCount.ToString();
+            if (i < board.boardSize - 1) boardPosition += "/";
+        }
+
+        string castleRights = "";
+        if (board.board[4, 0] is King wk && !wk.hasMoved)
+        {
+            if (board.board[7, 0] is Rook wr1 && !wr1.hasMoved) castleRights += "K";
+            if (board.board[0, 0] is Rook wr2 && !wr2.hasMoved) castleRights += "Q";
+        }
+        if (board.board[4, 7] is King bk && !bk.hasMoved)
+        {
+            if (board.board[7, 7] is Rook br1 && !br1.hasMoved) castleRights += "k";
+            if (board.board[0, 7] is Rook br2 && !br2.hasMoved) castleRights += "q";
+        }
+        if (castleRights == "") castleRights = "-";
+
+        string enpassant = "-";
+        if (moveHistory.Count > 0 && moveHistory.Last().isPawnLongMove)
+        {
+            foreach (PieceView p in pieceOnBoard)
+            {
+                List<Move> enMove = getEnpassantMoves(p);
+                if (enMove != null && enMove.Count > 0)
+                    enpassant = enMove.Last().enPassantFen();
+            }
+        }
+
+        return boardPosition + " " + (gameTurnWhite ? "w" : "b") + " " + castleRights + " " + enpassant + " 0 1";
+    }
     private void displayKingInCheck()
     {
         foreach (PieceView piece in pieceOnBoard)
@@ -1271,6 +1571,7 @@ public AudioClip loseSound;
 
         pieceViews[move.toX, move.toY] = piece;
         pieceViews[move.fromX, move.fromY] = null;
+        move.hadMovedBefore = piece.pieceData.hasMoved; // Lưu trạng thái trước khi đi
         piece.position = new Vector2Int(move.toX, move.toY);
         piece.pieceData.hasMoved = true;
     }
