@@ -422,6 +422,12 @@ public AudioClip loseSound;
         // 3. Đảo lượt
         gameTurnWhite = !gameTurnWhite;
 
+        // Xóa các trạng thái lựa chọn và gợi ý
+        isPieceSelected = false;
+        selectedPiece = null;
+        clearDots();
+        clearHintHighlight();
+
         // 4. Rebuild UI
         RebuildMoveListUI();
         RebuildCapturedPiecesUI();
@@ -1554,10 +1560,20 @@ public AudioClip loseSound;
         Vector2 spawnPos = new Vector2(changeXVector(move.fromX), changeYVector(move.fromY));
 
         GameObject fromMove = Instantiate(lastMovePrefab, spawnPos, Quaternion.identity);
+        SpriteRenderer fromSr = fromMove.GetComponent<SpriteRenderer>();
+        if (fromSr != null)
+        {
+            fromSr.sortingOrder = 1; // Đặt layer cao hơn bàn cờ (0) nhưng thấp hơn quân cờ (2)
+        }
         activeMoveHighlight.Add(fromMove);
 
         spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
         GameObject toMove = Instantiate(lastMovePrefab, spawnPos, Quaternion.identity);
+        SpriteRenderer toSr = toMove.GetComponent<SpriteRenderer>();
+        if (toSr != null)
+        {
+            toSr.sortingOrder = 1; // Đặt layer cao hơn bàn cờ (0) nhưng thấp hơn quân cờ (2)
+        }
         activeMoveHighlight.Add(toMove);
     }
 

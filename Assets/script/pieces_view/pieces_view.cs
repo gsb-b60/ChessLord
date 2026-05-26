@@ -24,6 +24,15 @@ public class PieceView : MonoBehaviour
         GameManage.instance.onPieceClicked(this);
     }
 
+    private void Awake()
+    {
+        SpriteRenderer sr = GetComponent<SpriteRenderer>();
+        if (sr != null)
+        {
+            sr.sortingOrder = 2; // Đảm bảo quân cờ luôn luôn nổi lên trên highlight (layer 0 hoặc -1)
+        }
+    }
+
 
     public void MoveTo(int x, int y)
     {
