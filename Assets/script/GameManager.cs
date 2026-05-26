@@ -36,9 +36,9 @@ public class GameManage : MonoBehaviour
     public TMP_Text levelTextUI; 
 
     [Header("Vị trí Bàn Cờ")]
-    [Tooltip("Chỉnh khi bàn cờ bị lệch. Tăng Y để dọi lên, tăng X để dọi phải.")]
-    public float boardOffsetX = 0f;
-    public float boardOffsetY = 0f;
+    [Tooltip("Kéo GameObject của sprite bàn cờ vào đây. Quân sẽ tự căn theo vị trí bàn cờ.")]
+    public Transform boardCenter;   // Transform của bàn cờ (center)
+    public float squareSize = 1f;   // Kích thước 1 ô cờ theo world units
 
     [Header("Âm thanh Bàn cờ")]
 public AudioSource boardAudio;     
@@ -1378,15 +1378,23 @@ public AudioClip loseSound;
         }
         return null;
     }
+    // Tính toạ độ World của quân cờ dựa theo vị trí thực của bàn cờ
+    // Bàn cờ 8x8, tâm bàn cờ là giữa ô (3,3) và (4,4)
+    // offset từ tâm: cột 0 = -3.5, cột 7 = +3.5
     private float changeXVector(int x)
     {
-        float baseX = isPlayerWhite ? x - 4 : 7 - x - 4;
-        return baseX + boardOffsetX;
+        float col = isPlayerWhite ? x : 7 - x;
+        if (boardCenter != null)
+            return boardCenter.position.x + (col - 3.5f) * squareSize;
+        // fallback: giả sử tâm bàn = (-0.5, 0.5) khi không gán boardCenter
+        return (isPlayerWhite ? x - 4 : 7 - x - 4) + 0.5f;
     }
     private float changeYVector(int y)
     {
-        float baseY = isPlayerWhite ? y - 3 : 7 - y - 3;
-        return baseY + boardOffsetY;
+        float row = isPlayerWhite ? y : 7 - y;
+        if (boardCenter != null)
+            return boardCenter.position.y + (row - 3.5f) * squareSize;
+        return (isPlayerWhite ? y - 3 : 7 - y - 3) + 0.5f;
     }
 
     // Update is called once per frame
