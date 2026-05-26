@@ -113,8 +113,13 @@ public AudioClip loseSound;
     public ScrollRect moveListScroll;
     private GameObject currentListingMove;
 
-    public TMP_Text userTurn;
-    public TMP_Text computerTurn;
+    // Avatar hiển thị lượt đi - kéo Image của avatar vào đây trong Inspector
+    public Image userAvatar;      // Avatar của người chơi
+    public Image computerAvatar;  // Avatar của máy
+
+    // Màu khi đến lượt (xanh lá sáng) và khi chờ (trắng mờ)
+    private readonly Color activeColor  = new Color(0.2f, 0.9f, 0.3f, 1f);   // xanh lá
+    private readonly Color inactiveColor = new Color(1f, 1f, 1f, 0.35f);      // trắng mờ
 
 
 
@@ -285,8 +290,12 @@ public AudioClip loseSound;
     private void UpdateTurnUI()
     {
         bool isUserTurn = (gameTurnWhite == isPlayerWhite);
-        if (userTurn != null) userTurn.gameObject.SetActive(isUserTurn);
-        if (computerTurn != null) computerTurn.gameObject.SetActive(!isUserTurn);
+
+        if (userAvatar != null)
+            userAvatar.color = isUserTurn ? activeColor : inactiveColor;
+
+        if (computerAvatar != null)
+            computerAvatar.color = isUserTurn ? inactiveColor : activeColor;
     }
     public void onResignClicked()
     {
