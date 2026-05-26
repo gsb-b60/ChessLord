@@ -123,21 +123,24 @@ public AudioClip loseSound;
     List<GameObject> activeMoveHighlight = new List<GameObject>();
 
     bool isPlayerWhite;
-    public void EndingGame(CheckType result = CheckType.None, bool userWon = false)
+    public async void EndingGame(CheckType result = CheckType.None, bool userWon = false)
     {
         Debug.Log("Ending game with result: " + result + ", userWon: " + userWon);
+
         if (boardAudio != null)
         {
-    
             if ((result == CheckType.Resign || (result == CheckType.Checkmate && !userWon)) && loseSound != null)
             {
                 boardAudio.PlayOneShot(loseSound);
             }
-          
         }
 
+        // Delay 2 giây để người chơi xem được thế cờ chiếu bí trước khi hiện bảng kết quả
+        await Task.Delay(2000);
+
         gameMatchPanel.SetActive(true);
-        gameMatchPanel.GetComponent<GameMatchScript>().SetResultText(result, userWon);
+        int botLevel = GameData.selectedLevel; // 0 = PvP, > 0 = đánh với máy
+        gameMatchPanel.GetComponent<GameMatchScript>().SetResultText(result, userWon, botLevel);
     }
     public void QuitGame()
     {

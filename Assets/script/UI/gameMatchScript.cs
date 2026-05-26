@@ -4,26 +4,29 @@ using UnityEngine;
 public class GameMatchScript : MonoBehaviour
 {
     public TMP_Text resultText;
-    public void SetResultText(CheckType result, bool userWon)
+    public void SetResultText(CheckType result, bool userWon, int botLevel = 0)
     {
         string resultString = "";
-        Debug.Log("Setting result text with result: " + result + ", userWon: " + userWon);
-        
+        string lostToText = botLevel > 0 ? $"Thua bởi Computer Level {botLevel}!" : "You Lose!";
+        string wonText = "You Win!";
+
+        Debug.Log("Setting result text with result: " + result + ", userWon: " + userWon + ", botLevel: " + botLevel);
+
         switch (result)
         {
             case CheckType.Checkmate:
-                resultString = userWon ? "You Win by Checkmate!" : "You Lose by Checkmate!";
+                resultString = userWon ? "You Win by Checkmate!" : (botLevel > 0 ? $"Thua bởi Computer Level {botLevel}!" : "You Lose by Checkmate!");
                 break;
             case CheckType.Stalemate:
                 resultString = "It's a Draw by Stalemate!";
                 break;
-            case CheckType.Resign:        // <--- ĐÃ THÊM CASE ĐẦU HÀNG
+            case CheckType.Resign:
                 resultString = "You Resigned!";
                 break;
             case CheckType.None:
-                resultString = userWon ? "You Win!" : "You Lose!";
+                resultString = userWon ? wonText : lostToText;
                 break;
         }
         resultText.text = resultString;
     }
-}
+}
