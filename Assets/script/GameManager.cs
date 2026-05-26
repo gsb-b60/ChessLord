@@ -1551,12 +1551,12 @@ public AudioClip loseSound;
         activeMoveHighlight.ForEach(dot => Destroy(dot));
         activeMoveHighlight.Clear();
 
-        // z = 1 để highlight render SAU quân cờ (quân cờ ở z=0)
-        Vector3 spawnPos = new Vector3(changeXVector(move.fromX), changeYVector(move.fromY), 1f);
+        Vector2 spawnPos = new Vector2(changeXVector(move.fromX), changeYVector(move.fromY));
+
         GameObject fromMove = Instantiate(lastMovePrefab, spawnPos, Quaternion.identity);
         activeMoveHighlight.Add(fromMove);
 
-        spawnPos = new Vector3(changeXVector(move.toX), changeYVector(move.toY), 1f);
+        spawnPos = new Vector2(changeXVector(move.toX), changeYVector(move.toY));
         GameObject toMove = Instantiate(lastMovePrefab, spawnPos, Quaternion.identity);
         activeMoveHighlight.Add(toMove);
     }
